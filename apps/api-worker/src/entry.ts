@@ -1,6 +1,7 @@
 import type { ApiResponse } from '@beeecom/contracts';
 import type { ChatMessage } from '@beeecom/domain';
 
+import { handleChatLifecycle } from './chat-lifecycle';
 import coreWorker from './index';
 import {
   ChatRoom,
@@ -70,6 +71,9 @@ export default {
       }
       return proxyChatWebSocket(env.CHAT_ROOMS, threadId, request);
     }
+
+    const lifecycleResponse = await handleChatLifecycle(request, env);
+    if (lifecycleResponse) return lifecycleResponse;
 
     const response = await coreWorker.fetch(request, env);
     if (request.method === 'POST' && persistedMessageRoute(url.pathname)) {
