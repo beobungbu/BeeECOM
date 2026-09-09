@@ -1,13 +1,26 @@
 import type {
   ApiResponse,
+  CartAddLineInput,
+  CartApplyCouponInput,
   CatalogQuery,
+  ChatThreadQuery,
   CheckoutInput,
   DemoResetInput,
   DemoResetResult,
+  OrderQuery,
   Page,
   SendChatMessageInput,
 } from '@beeecom/contracts';
-import type { Cart, ChatMessage, ChatThread, Customer, DemoPersona, Order, Product, Promotion } from '@beeecom/domain';
+import type {
+  Cart,
+  ChatMessage,
+  ChatThread,
+  Customer,
+  DemoPersona,
+  Order,
+  Product,
+  Promotion,
+} from '@beeecom/domain';
 
 export class BeeEcomApiError extends Error {
   readonly code: string;
@@ -27,12 +40,31 @@ export interface BeeEcomClientOptions {
   getAccessToken?: () => string | undefined | Promise<string | undefined>;
 }
 
-function encodeQuery(input: CatalogQuery): string {
+function encodeCatalogQuery(input: CatalogQuery): string {
   const params = new URLSearchParams();
   if (input.q) params.set('q', input.q);
   if (input.category) params.set('category', input.category);
   for (const tag of input.tags ?? []) params.append('tag', tag);
   if (input.sort) params.set('sort', input.sort);
+  if (input.page) params.set('page', String(input.page));
+  if (input.pageSize) params.set('pageSize', String(input.pageSize));
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+function encodeOrderQuery(input: OrderQuery): string {
+  const params = new URLSearchParams();
+  if (input.customerId) params.set('customerId', input.customerId);
+  if (input.page) params.set('page', String(input.page));
+  if (input.pageSize) params.set('pageSize', String(input.pageSize));
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+function encodeChatThreadQuery(input: ChatThreadQuery): string {
+  const params = new URLSearchParams();
+  if (input.customerId) params.set('customerId', input.customerId);
+  if (input.status) params.set('status', input.status);
   if (input.page) params.set('page', String(input.page));
   if (input.pageSize) params.set('pageSize', String(input.pageSize));
   const query = params.toString();
@@ -61,7 +93,7 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
   return {
     catalog: {
       listProducts(query: CatalogQuery = {}) {
-        return request<Page<Product>>(`/api/v1/catalog/products${encodeQuery(query)}`);
+        return request<Page<Product>>(`/api/v1/catalog/products${encodeCatalogQuery(query)}`);
       },
       getProduct(id: string) {
         return request<Product>(`/api/v1/catalog/products/${encodeURIComponent(id)}`);
@@ -71,11 +103,26 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       get(id: string) {
         return request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}`);
       },
+      addLine(id: string, input: CartAddLineInput) {
+        return request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}/lines`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        });
+      },
+      applyCoupon(id: string, input: CartApplyCouponInput) {
+        return request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}/coupon`, {
+          method: 'PATCH',
+          body: JSON.stringify(input),
+        });
+      },
     },
     checkout(input: CheckoutInput) {
       return request<Order>('/api/v1/checkout', { method: 'POST', body: JSON.stringify(input) });
     },
     orders: {
+      list(query: OrderQuery = {}) {
+        return request<Page<Order>>(`/api/v1/orders${encodeOrderQuery(query)}`);
+      },
       get(id: string) {
         return request<Order>(`/api/v1/orders/${encodeURIComponent(id)}`);
       },
@@ -91,6 +138,9 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       },
     },
     chat: {
+      listThreads(query: ChatThreadQuery = {}) {
+        return request<Page<ChatThread>>(`/api/v1/chat/threads${encodeChatThreadQuery(query)}`);
+      },
       getThread(id: string) {
         return request<ChatThread>(`/api/v1/chat/threads/${encodeURIComponent(id)}`);
       },
