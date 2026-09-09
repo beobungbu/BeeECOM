@@ -30,7 +30,6 @@ test.describe('BeeUI scoped theme + runtime token conformance', () => {
     const scopedBackground = await token(page, 'scoped-background');
     const scopedPrimary = await token(page, 'scoped-primary');
     const nestedPrimary = await token(page, 'nested-primary');
-    const scopedImperativeGlobalPrimary = await token(page, 'scoped-imperative-global-primary');
 
     expect(siblingBackground).toBe(globalBackground);
     expect(siblingPrimary).toBe(globalPrimary);
@@ -38,9 +37,10 @@ test.describe('BeeUI scoped theme + runtime token conformance', () => {
     expect(scopedPrimary).not.toBe(globalPrimary);
     expect(nestedPrimary).not.toBe(scopedPrimary);
 
-    // `getBeeToken` is intentionally global-theme-only even when called while a
-    // component renders under BeeThemeScope. The hook is the scope-aware reader.
-    expect(scopedImperativeGlobalPrimary).toBe(globalPrimary);
+    // `getBeeToken` is an imperative snapshot API. Exercise it only after the
+    // theme runtime has initialized, exactly as BeeUI's public contract requires.
+    await page.getByRole('button', { name: 'Read imperative global primary' }).click();
+    expect(await token(page, 'scoped-imperative-global-primary')).toBe(globalPrimary);
 
     await expect(page.getByTestId('scoped-radius')).toHaveText(/^radius=\d+(?:\.\d+)?$/);
     await expect(page.getByTestId('scoped-motion')).toHaveText(/^motion=\d+(?:\.\d+)?$/);
