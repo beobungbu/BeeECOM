@@ -11,6 +11,7 @@ import {
   type Order,
   type Product,
   type Promotion,
+  type Wishlist,
 } from '@beeecom/domain';
 import {
   Badge,
@@ -44,7 +45,7 @@ const CART_ID = 'cart-ava';
 const CUSTOMER_ID = 'cust-ava';
 const THREAD_ID = 'thread-ava-1';
 
-type MobileSection = 'shop' | 'cart' | 'orders' | 'account' | 'support';
+type MobileSection = 'shop' | 'wishlist' | 'cart' | 'orders' | 'account' | 'support';
 
 function appendMessage(messages: ChatMessage[], message: ChatMessage): ChatMessage[] {
   return messages.some((item) => item.id === message.id) ? messages : [...messages, message];
@@ -68,6 +69,8 @@ export default function App() {
   const [quantity, setQuantity] = React.useState(1);
   const [cart, setCart] = React.useState<Cart | null>(null);
   const [customer, setCustomer] = React.useState<Customer | null>(null);
+  const [wishlist, setWishlist] = React.useState<Wishlist | null>(null);
+  const [wishlistProducts, setWishlistProducts] = React.useState<Product[]>([]);
   const [promotions, setPromotions] = React.useState<Promotion[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
@@ -81,6 +84,16 @@ export default function App() {
   const [notice, setNotice] = React.useState<string | null>(null);
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
+
+  const hydrateWishlist = React.useCallback(async (nextWishlist: Wishlist) => {
+    const nextProducts = await Promise.all(nextWishlist.productIds.map((productId) => api.catalog.getProduct(productId)));
+    setWishlist(nextWishlist);
+    setWishlistProducts(nextProducts);
+  }, []);
+
+  const refreshWishlist = React.useCallback(async () => {
+    await hydrateWishlist(await api.wishlist.get(CUSTOMER_ID));
+  }, [hydrateWishlist]);
 
   const loadChatHistory = React.useCallback(async () => {
     const [history] = await Promise.all([
@@ -99,20 +112,24 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [page, categoryList, currentCart, currentCustomer, promoList, orderPage, history] = await Promise.all([
+      const [page, categoryList, currentCart, currentCustomer, wishlistState, promoList, orderPage, history] = await Promise.all([
         api.catalog.listProducts({ sort: 'featured', pageSize: 24 }),
         api.catalog.listCategories(),
         api.carts.get(CART_ID),
         api.customers.get(CUSTOMER_ID),
+        api.wishlist.get(CUSTOMER_ID),
         api.promotions.list(),
         api.orders.list({ customerId: CUSTOMER_ID, pageSize: 50 }),
         api.chat.listMessages(THREAD_ID),
         api.chat.markRead(THREAD_ID, { readerRole: 'customer' }),
       ]);
+      const wishlistItems = await Promise.all(wishlistState.productIds.map((productId) => api.catalog.getProduct(productId)));
       setProducts(page.items);
       setCategories(categoryList);
       setCart(currentCart);
       setCustomer(currentCustomer);
+      setWishlist(wishlistState);
+      setWishlistProducts(wishlistItems);
       setPromotions(promoList);
       setOrders(orderPage.items);
       setMessages(history);
@@ -160,6 +177,7 @@ export default function App() {
   }, []);
 
   const selectedVariant = selected?.variants.find((variant) => variant.id === variantId);
+  const selectedIsWishlisted = selected ? wishlist?.productIds.includes(selected.id) ?? false : false;
   const appliedPromotion = cart?.couponCode
     ? promotions.find((promotion) => promotion.active && promotion.code === cart.couponCode)
     : undefined;
@@ -179,6 +197,36 @@ export default function App() {
       setSelected(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to search the catalog.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleSelectedWishlist() {
+    if (!selected) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const nextWishlist = selectedIsWishlisted
+        ? await api.wishlist.remove(CUSTOMER_ID, selected.id)
+        : await api.wishlist.add(CUSTOMER_ID, { productId: selected.id });
+      await hydrateWishlist(nextWishlist);
+      setNotice(selectedIsWishlisted ? `${selected.title} removed from wishlist.` : `${selected.title} saved to wishlist.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to update wishlist.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeWishlistItem(product: Product) {
+    setBusy(true);
+    setError(null);
+    try {
+      await hydrateWishlist(await api.wishlist.remove(CUSTOMER_ID, product.id));
+      setNotice(`${product.title} removed from wishlist.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to update wishlist.');
     } finally {
       setBusy(false);
     }
@@ -287,6 +335,7 @@ export default function App() {
                 </Text>
                 <Box className="flex-row flex-wrap gap-2">
                   <NavButton active={section === 'shop'} label="Shop" onPress={() => setSection('shop')} />
+                  <NavButton active={section === 'wishlist'} label={`Wishlist ${wishlist?.productIds.length ?? 0}`} onPress={() => setSection('wishlist')} />
                   <NavButton active={section === 'cart'} label={`Cart ${cart?.lines.length ?? 0}`} onPress={() => setSection('cart')} />
                   <NavButton active={section === 'orders'} label="Orders" onPress={() => setSection('orders')} />
                   <NavButton active={section === 'account'} label="Account" onPress={() => setSection('account')} />
@@ -304,7 +353,7 @@ export default function App() {
               {loading ? (
                 <Card className="gap-2 p-5">
                   <Text variant="title">Loading mobile storefront…</Text>
-                  <Text variant="body">Reading catalog, cart, customer, orders and support history from the shared API.</Text>
+                  <Text variant="body">Reading catalog, wishlist, cart, customer, orders and support history from the shared API.</Text>
                 </Card>
               ) : null}
 
@@ -360,6 +409,10 @@ export default function App() {
                         <Text variant="body">★ {selected.rating.toFixed(1)} · {selected.reviewCount} reviews</Text>
                       </Box>
 
+                      <Button variant="outline" disabled={busy} onPress={() => void toggleSelectedWishlist()}>
+                        {selectedIsWishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
+                      </Button>
+
                       <Box className="gap-2">
                         <Text variant="body">Variant</Text>
                         {variantId ? (
@@ -402,6 +455,35 @@ export default function App() {
                       ) : null}
                     </Card>
                   ) : null}
+                </Box>
+              ) : null}
+
+              {!loading && section === 'wishlist' ? (
+                <Box className="gap-3">
+                  <Box className="flex-row flex-wrap items-center justify-between gap-2">
+                    <Text variant="title">Persistent wishlist</Text>
+                    <Button variant="outline" disabled={busy} onPress={() => void refreshWishlist()}>Refresh wishlist</Button>
+                  </Box>
+                  <Text variant="body">Wishlist state is stored in D1 and survives app restart/reload.</Text>
+                  {wishlistProducts.length ? wishlistProducts.map((product) => (
+                    <Card key={product.id} className="gap-3 p-5">
+                      <Text variant="title">{product.title}</Text>
+                      <Text variant="body">{product.subtitle ?? product.description}</Text>
+                      <Text variant="body">From {formatMoney(product.variants[0]?.price ?? { amount: 0, currency: 'USD' })}</Text>
+                      <Box className="flex-row flex-wrap gap-2">
+                        <Button onPress={() => {
+                          setSection('shop');
+                          chooseProduct(product);
+                        }}>View product</Button>
+                        <Button variant="outline" disabled={busy} onPress={() => void removeWishlistItem(product)}>Remove</Button>
+                      </Box>
+                    </Card>
+                  )) : (
+                    <Card className="gap-2 p-5">
+                      <Text variant="body">Wishlist is empty.</Text>
+                      <Button onPress={() => setSection('shop')}>Browse products</Button>
+                    </Card>
+                  )}
                 </Box>
               ) : null}
 
