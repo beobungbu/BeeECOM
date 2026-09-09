@@ -108,6 +108,23 @@ export interface ChatMessagePersistedEvent {
 
 export type ChatRealtimeEvent = ChatMessagePersistedEvent;
 
+export function isChatRealtimeEvent(value: unknown): value is ChatRealtimeEvent {
+  if (!value || typeof value !== 'object') return false;
+  const event = value as Record<string, unknown>;
+  if (event.type !== 'message.persisted' || typeof event.threadId !== 'string') return false;
+  const message = event.message;
+  if (!message || typeof message !== 'object') return false;
+  const record = message as Record<string, unknown>;
+  return (
+    typeof record.id === 'string'
+    && record.threadId === event.threadId
+    && typeof record.senderId === 'string'
+    && (record.senderRole === 'customer' || record.senderRole === 'support-agent')
+    && typeof record.body === 'string'
+    && typeof record.sentAt === 'string'
+  );
+}
+
 export interface DemoResetInput {
   scenario: DemoScenarioName;
 }
