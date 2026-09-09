@@ -3,7 +3,6 @@ import { formatMoney } from '@beeecom/app-ui';
 import type { ChatMessage, ChatThread, Order, Product, Promotion } from '@beeecom/domain';
 import {
   Badge,
-  BeeUIProvider,
   Box,
   Button,
   Card,
@@ -157,94 +156,92 @@ export function App() {
   const customerOrders = selectedThread ? orders.filter((order) => order.customerId === selectedThread.customerId) : [];
 
   return (
-    <BeeUIProvider>
-      <Screen>
-        <Box className="mx-auto w-full max-w-screen-2xl gap-6 p-4 md:p-8">
-          <Box className="flex-row flex-wrap items-center justify-between gap-4">
-            <Box className="gap-1">
-              <Box className="flex-row flex-wrap items-center gap-3">
-                <Text variant="title">BeeECOM Admin</Text>
-                <Badge>Shared D1 operations</Badge>
-              </Box>
-              <Text variant="body">Persisted catalog, inventory, promotions, orders, customers, returns, reviews and support operations.</Text>
+    <Screen>
+      <Box className="mx-auto w-full max-w-screen-2xl gap-6 p-4 md:p-8">
+        <Box className="flex-row flex-wrap items-center justify-between gap-4">
+          <Box className="gap-1">
+            <Box className="flex-row flex-wrap items-center gap-3">
+              <Text variant="title">BeeECOM Admin</Text>
+              <Badge>Shared D1 operations</Badge>
             </Box>
-            <Button onPress={() => void refresh()}>Refresh canonical state</Button>
+            <Text variant="body">Persisted catalog, inventory, promotions, orders, customers, returns, reviews and support operations.</Text>
           </Box>
-
-          {notice ? <Card className="p-4"><Text variant="body">{notice}</Text></Card> : null}
-          {error ? (
-            <Card className="gap-3 p-5">
-              <Text variant="title">Operation failed</Text><Text variant="body">{error}</Text>
-              <Button onPress={() => void refresh()}>Reload state</Button>
-            </Card>
-          ) : null}
-
-          <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <Card className="gap-1 p-5"><Text variant="body">Products</Text><Text variant="title">{products.length}</Text></Card>
-            <Card className="gap-1 p-5"><Text variant="body">Low stock</Text><Text variant="title">{lowStock}</Text></Card>
-            <Card className="gap-1 p-5"><Text variant="body">Out of stock</Text><Text variant="title">{outOfStock}</Text></Card>
-            <Card className="gap-1 p-5"><Text variant="body">Active campaigns</Text><Text variant="title">{activePromotions}</Text></Card>
-            <Card className="gap-1 p-5"><Text variant="body">Order exceptions</Text><Text variant="title">{exceptionOrders}</Text></Card>
-          </Box>
-
-          {loading ? <Card className="p-6"><Text variant="body">Loading operations state…</Text></Card> : null}
-
-          {!loading ? (
-            <OperationsPanels
-              api={api}
-              products={products}
-              promotions={promotions}
-              orders={orders}
-              onCanonicalRefresh={refresh}
-              onNotice={showNotice}
-              onError={showError}
-            />
-          ) : null}
-
-          {!loading ? (
-            <Card className="gap-4 p-4 md:p-6">
-              <Box className="gap-1"><Text variant="title">Dense inventory view</Text><Text variant="body">The narrow-width strategy keeps the operations table within an explicit scrollable page composition.</Text></Box>
-              <Table accessibilityLabel="Product catalog inventory table">
-                <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Price</TableHead><TableHead>Stock</TableHead><TableHead>State</TableHead></TableRow></TableHeader>
-                <TableBody>{products.flatMap((product) => product.variants.map((variant) => (
-                  <TableRow key={variant.id}><TableCell>{product.title}</TableCell><TableCell>{variant.sku}</TableCell><TableCell>{formatMoney(variant.price)}</TableCell><TableCell>{variant.inventoryQuantity}</TableCell><TableCell>{variant.inventoryState}</TableCell></TableRow>
-                )))}</TableBody>
-              </Table>
-            </Card>
-          ) : null}
-
-          {!loading ? (
-            <Card className="gap-4 p-4 md:p-6">
-              <Box className="gap-1">
-                <Box className="flex-row flex-wrap items-center gap-2"><Text variant="title">Support inbox</Text><Badge>{chatStatus}</Badge></Box>
-                <Text variant="body">D1 history is canonical; Durable Objects fan out persisted messages and reconnect resyncs history.</Text>
-              </Box>
-              {threadId ? (
-                <>
-                  <Select value={threadId} onValueChange={(value) => void changeThread(value)}>
-                    <SelectTrigger accessibilityLabel="Support thread"><SelectValue placeholder="Choose conversation" /></SelectTrigger>
-                    <SelectContent>{threads.map((thread) => <SelectItem key={thread.id} value={thread.id}>{thread.subject} · {thread.unreadByAgent} unread</SelectItem>)}</SelectContent>
-                  </Select>
-                  {selectedThread ? (
-                    <Box className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                      <Card className="p-4"><Text variant="body">Customer</Text><Text variant="body">{selectedThread.customerId}</Text></Card>
-                      <Card className="p-4"><Text variant="body">Assigned</Text><Text variant="body">{selectedThread.assignedAgentId ?? 'Unassigned'}</Text></Card>
-                      <Card className="p-4"><Text variant="body">Orders</Text><Text variant="body">{customerOrders.length}</Text></Card>
-                    </Box>
-                  ) : null}
-                  <Box className="gap-2">{messages.map((message) => (
-                    <Box key={message.id} className="rounded-md border border-border p-3"><Text variant="body">{message.senderRole === 'support-agent' ? 'Support' : 'Customer'}: {message.body}</Text><Text variant="body">{message.sentAt}</Text></Box>
-                  ))}</Box>
-                  <Box className="flex-row flex-wrap gap-2">
-                    <Box className="min-w-64 flex-1"><Input accessibilityLabel="Agent reply" value={agentDraft} onChangeText={setAgentDraft} placeholder="Reply to customer" /></Box>
-                    <Button disabled={busy || !agentDraft.trim()} onPress={() => void reply()}>Reply</Button>
-                  </Box>
-                </>
-              ) : <Text variant="body">No open support conversations.</Text>}
-            </Card>
-          ) : null}
+          <Button onPress={() => void refresh()}>Refresh canonical state</Button>
         </Box>
-      </Screen>
-    </BeeUIProvider>
+
+        {notice ? <Card className="p-4"><Text variant="body">{notice}</Text></Card> : null}
+        {error ? (
+          <Card className="gap-3 p-5">
+            <Text variant="title">Operation failed</Text><Text variant="body">{error}</Text>
+            <Button onPress={() => void refresh()}>Reload state</Button>
+          </Card>
+        ) : null}
+
+        <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <Card className="gap-1 p-5"><Text variant="body">Products</Text><Text variant="title">{products.length}</Text></Card>
+          <Card className="gap-1 p-5"><Text variant="body">Low stock</Text><Text variant="title">{lowStock}</Text></Card>
+          <Card className="gap-1 p-5"><Text variant="body">Out of stock</Text><Text variant="title">{outOfStock}</Text></Card>
+          <Card className="gap-1 p-5"><Text variant="body">Active campaigns</Text><Text variant="title">{activePromotions}</Text></Card>
+          <Card className="gap-1 p-5"><Text variant="body">Order exceptions</Text><Text variant="title">{exceptionOrders}</Text></Card>
+        </Box>
+
+        {loading ? <Card className="p-6"><Text variant="body">Loading operations state…</Text></Card> : null}
+
+        {!loading ? (
+          <OperationsPanels
+            api={api}
+            products={products}
+            promotions={promotions}
+            orders={orders}
+            onCanonicalRefresh={refresh}
+            onNotice={showNotice}
+            onError={showError}
+          />
+        ) : null}
+
+        {!loading ? (
+          <Card className="gap-4 p-4 md:p-6">
+            <Box className="gap-1"><Text variant="title">Dense inventory view</Text><Text variant="body">The narrow-width strategy keeps the operations table within an explicit scrollable page composition.</Text></Box>
+            <Table accessibilityLabel="Product catalog inventory table">
+              <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Price</TableHead><TableHead>Stock</TableHead><TableHead>State</TableHead></TableRow></TableHeader>
+              <TableBody>{products.flatMap((product) => product.variants.map((variant) => (
+                <TableRow key={variant.id}><TableCell>{product.title}</TableCell><TableCell>{variant.sku}</TableCell><TableCell>{formatMoney(variant.price)}</TableCell><TableCell>{variant.inventoryQuantity}</TableCell><TableCell>{variant.inventoryState}</TableCell></TableRow>
+              )))}</TableBody>
+            </Table>
+          </Card>
+        ) : null}
+
+        {!loading ? (
+          <Card className="gap-4 p-4 md:p-6">
+            <Box className="gap-1">
+              <Box className="flex-row flex-wrap items-center gap-2"><Text variant="title">Support inbox</Text><Badge>{chatStatus}</Badge></Box>
+              <Text variant="body">D1 history is canonical; Durable Objects fan out persisted messages and reconnect resyncs history.</Text>
+            </Box>
+            {threadId ? (
+              <>
+                <Select value={threadId} onValueChange={(value) => void changeThread(value)}>
+                  <SelectTrigger accessibilityLabel="Support thread"><SelectValue placeholder="Choose conversation" /></SelectTrigger>
+                  <SelectContent>{threads.map((thread) => <SelectItem key={thread.id} value={thread.id}>{thread.subject} · {thread.unreadByAgent} unread</SelectItem>)}</SelectContent>
+                </Select>
+                {selectedThread ? (
+                  <Box className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <Card className="p-4"><Text variant="body">Customer</Text><Text variant="body">{selectedThread.customerId}</Text></Card>
+                    <Card className="p-4"><Text variant="body">Assigned</Text><Text variant="body">{selectedThread.assignedAgentId ?? 'Unassigned'}</Text></Card>
+                    <Card className="p-4"><Text variant="body">Orders</Text><Text variant="body">{customerOrders.length}</Text></Card>
+                  </Box>
+                ) : null}
+                <Box className="gap-2">{messages.map((message) => (
+                  <Box key={message.id} className="rounded-md border border-border p-3"><Text variant="body">{message.senderRole === 'support-agent' ? 'Support' : 'Customer'}: {message.body}</Text><Text variant="body">{message.sentAt}</Text></Box>
+                ))}</Box>
+                <Box className="flex-row flex-wrap gap-2">
+                  <Box className="min-w-64 flex-1"><Input accessibilityLabel="Agent reply" value={agentDraft} onChangeText={setAgentDraft} placeholder="Reply to customer" /></Box>
+                  <Button disabled={busy || !agentDraft.trim()} onPress={() => void reply()}>Reply</Button>
+                </Box>
+              </>
+            ) : <Text variant="body">No open support conversations.</Text>}
+          </Card>
+        ) : null}
+      </Box>
+    </Screen>
   );
 }
