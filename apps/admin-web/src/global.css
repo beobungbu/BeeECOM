@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+@import 'uniwind';
+@import '@beemvp/beeui-tokens/theme.css';
+
+@source '../node_modules/@beemvp/beeui-core/src';
+@source '../node_modules/@beemvp/beeui-ui/src';
+@source '../node_modules/@beeecom/app-ui/src';
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
