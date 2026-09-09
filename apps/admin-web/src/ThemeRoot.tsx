@@ -28,8 +28,8 @@ export function ThemeRoot() {
 
   return (
     <>
-      <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
       <App />
+      <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
     </>
   );
 }
