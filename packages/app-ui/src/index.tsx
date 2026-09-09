@@ -19,6 +19,10 @@ export function ProductMedia({ product, aspectRatio = 1 }: ProductMediaProps) {
   const firstImage = product.images[0];
   const [failed, setFailed] = React.useState(false);
 
+  React.useEffect(() => {
+    setFailed(false);
+  }, [firstImage?.url]);
+
   if (!firstImage || failed) {
     return (
       <Box
@@ -82,17 +86,63 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
   );
 }
 
+export interface FeaturedProductHeroProps {
+  product: Product;
+  onPress?: ((product: Product) => void) | undefined;
+}
+
+export function FeaturedProductHero({ product, onPress }: FeaturedProductHeroProps) {
+  const firstVariant = product.variants[0];
+  const available = product.variants.some((item) => item.inventoryQuantity > 0);
+
+  return (
+    <Card className="gap-0 overflow-hidden p-0">
+      <Box className="grid grid-cols-1 lg:grid-cols-2">
+        <ProductMedia product={product} aspectRatio={1.28} />
+        <Box className="justify-center gap-4 p-6 md:p-10 lg:p-12">
+          <Box className="flex-row flex-wrap items-center gap-2">
+            <Badge>Featured edit</Badge>
+            <Text variant="body">★ {product.rating.toFixed(1)} · {product.reviewCount} reviews</Text>
+          </Box>
+          <Box className="gap-2">
+            <Text variant="title">{product.title}</Text>
+            {product.subtitle ? <Text variant="title">{product.subtitle}</Text> : null}
+            <Text variant="body">{product.description}</Text>
+          </Box>
+          <Box className="flex-row flex-wrap items-center gap-2">
+            {firstVariant ? <Text variant="title">From {formatMoney(firstVariant.price)}</Text> : null}
+            <Badge>{available ? 'Ready to ship' : 'Sold out'}</Badge>
+          </Box>
+          <Box className="flex-row flex-wrap gap-2">
+            <Button accessibilityLabel={`Shop featured ${product.title}`} onPress={() => onPress?.(product)}>
+              Shop featured
+            </Button>
+            <Button variant="outline" accessibilityLabel={`Explore ${product.title}`} onPress={() => onPress?.(product)}>
+              Explore details
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+    </Card>
+  );
+}
+
 export interface ProductGridProps {
   products: Product[];
   onProductPress?: ((product: Product) => void) | undefined;
 }
 
 export function ProductGrid({ products, onProductPress }: ProductGridProps) {
+  const featured = products.find((product) => product.featured) ?? products[0];
+
   return (
-    <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} onPress={onProductPress} />
-      ))}
+    <Box className="gap-6">
+      {featured ? <FeaturedProductHero product={featured} onPress={onProductPress} /> : null}
+      <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} onPress={onProductPress} />
+        ))}
+      </Box>
     </Box>
   );
 }
