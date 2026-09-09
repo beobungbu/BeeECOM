@@ -222,7 +222,7 @@ export function App() {
                 <Text variant="title">Support inbox</Text>
                 <Text variant="body">History is read from D1; duplicate sends are guarded by `clientMessageId`.</Text>
               </Box>
-              {threads.length ? (
+              {threadId ? (
                 <>
                   <Select value={threadId} onValueChange={(value) => void changeThread(value)}>
                     <SelectTrigger accessibilityLabel="Support thread">
