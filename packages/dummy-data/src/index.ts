@@ -8,6 +8,7 @@ import {
   type ChatThread,
   type Customer,
   type DemoPersona,
+  type ImageAsset,
   type Order,
   type Product,
   type Promotion,
@@ -17,7 +18,48 @@ import {
 
 const FIXED_NOW = '2026-09-01T09:00:00.000Z';
 const FIXED_LATER = '2026-12-31T23:59:59.000Z';
-const IMAGE = (label: string) => `https://placehold.co/900x900/png?text=${encodeURIComponent(label)}`;
+
+const REAL_PRODUCT_MEDIA: ImageAsset[] = [
+  {
+    id: 'img-cloud-tee',
+    url: 'https://images.unsplash.com/photo-1610502778270-c5c6f4c7d575?auto=format&fit=crop&w=1200&q=82',
+    alt: 'Black heavyweight shirts on wooden hangers against a bright studio background',
+    sourceName: 'Unsplash',
+    sourceUrl: 'https://unsplash.com/photos/Cs4GVbMqKGY',
+    authorName: 'Ryan Hoffman',
+    authorUrl: 'https://unsplash.com/@ryanhoffman007',
+  },
+  {
+    id: 'img-trail-runner',
+    url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=82',
+    alt: 'Red performance running shoe photographed in a clean product composition',
+    sourceName: 'Unsplash',
+    sourceUrl: 'https://unsplash.com/photos/164_6wVEHfI',
+    authorName: 'REVOLT',
+  },
+  {
+    id: 'img-field-pack',
+    url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=1200&q=82',
+    alt: 'Navy backpack standing in a minimal sunlit interior',
+    sourceName: 'Unsplash',
+    sourceUrl: 'https://unsplash.com/photos/_H0fjILH5Vw',
+    authorName: 'Sun Lingyan',
+    authorUrl: 'https://unsplash.com/@sunlingyan',
+  },
+  {
+    id: 'img-studio-cap',
+    url: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=1200&q=82',
+    alt: 'White low-profile cap photographed on a white studio surface',
+    sourceName: 'Unsplash',
+    sourceUrl: 'https://unsplash.com/photos/t8HiP3e5abg',
+    authorName: 'Mediamodifier',
+    authorUrl: 'https://unsplash.com/@mediamodifier',
+  },
+];
+
+function productMedia(index: number): ImageAsset {
+  return structuredClone(REAL_PRODUCT_MEDIA[index]!);
+}
 
 export interface DemoDataset {
   scenario: DemoScenarioName;
@@ -56,9 +98,27 @@ function variant(
 
 function baseDataset(): DemoDataset {
   const categories: Category[] = [
-    { id: 'cat-apparel', slug: 'apparel', name: 'Apparel', description: 'Everyday essentials with deterministic demo inventory.' },
-    { id: 'cat-footwear', slug: 'footwear', name: 'Footwear', description: 'Shoes used to exercise size and stock variants.' },
-    { id: 'cat-accessories', slug: 'accessories', name: 'Accessories', description: 'Small goods for cart and promotion combinations.' },
+    {
+      id: 'cat-apparel',
+      slug: 'apparel',
+      name: 'Apparel',
+      description: 'Soft everyday layers, clean silhouettes and easy wardrobe staples.',
+      image: { ...productMedia(0), id: 'img-category-apparel', alt: 'Minimal black apparel collection' },
+    },
+    {
+      id: 'cat-footwear',
+      slug: 'footwear',
+      name: 'Footwear',
+      description: 'Cushioned everyday footwear built for city miles and weekend movement.',
+      image: { ...productMedia(1), id: 'img-category-footwear', alt: 'Red performance footwear' },
+    },
+    {
+      id: 'cat-accessories',
+      slug: 'accessories',
+      name: 'Accessories',
+      description: 'Practical carry goods and finishing pieces for the daily rotation.',
+      image: { ...productMedia(2), id: 'img-category-accessories', alt: 'Minimal navy day pack' },
+    },
   ];
 
   const products: Product[] = [
@@ -67,10 +127,10 @@ function baseDataset(): DemoDataset {
       slug: 'cloud-tee',
       title: 'Cloud Tee',
       subtitle: 'Soft heavyweight cotton',
-      description: 'A neutral product fixture with size and color variants for BeeUI storefront validation.',
+      description: 'A structured everyday tee cut from dense, soft cotton with a relaxed shape that layers cleanly and holds its form.',
       categoryIds: ['cat-apparel'],
       tags: ['featured', 'new'],
-      images: [{ id: 'img-cloud-tee', url: IMAGE('Cloud Tee'), alt: 'Cloud Tee' }],
+      images: [productMedia(0)],
       options: [
         { id: 'opt-color', name: 'Color', values: [{ id: 'black', label: 'Black' }, { id: 'sand', label: 'Sand' }] },
         { id: 'opt-size', name: 'Size', values: [{ id: 's', label: 'S' }, { id: 'm', label: 'M' }, { id: 'l', label: 'L' }] },
@@ -91,10 +151,10 @@ function baseDataset(): DemoDataset {
       slug: 'trail-runner',
       title: 'Trail Runner',
       subtitle: 'Daily technical sneaker',
-      description: 'Footwear fixture with several sizes and a compare-at price.',
+      description: 'A lightweight daily runner with a cushioned profile, grippy outsole and enough structure for long walks, commutes and easy training days.',
       categoryIds: ['cat-footwear'],
       tags: ['featured', 'sale'],
-      images: [{ id: 'img-trail-runner', url: IMAGE('Trail Runner'), alt: 'Trail Runner sneaker' }],
+      images: [productMedia(1)],
       options: [{ id: 'opt-shoe-size', name: 'Size', values: [{ id: '40', label: '40' }, { id: '41', label: '41' }, { id: '42', label: '42' }] }],
       variants: [
         { ...variant('var-trail-40', 'TRAIL-40', '40', 8900, 12, { Size: '40' }), compareAtPrice: money(10900) },
@@ -112,10 +172,10 @@ function baseDataset(): DemoDataset {
       slug: 'field-pack',
       title: 'Field Pack',
       subtitle: 'Compact 18L day pack',
-      description: 'Accessory fixture used in wishlist, recently viewed, and mixed carts.',
+      description: 'A clean 18L day pack with a compact footprint, structured main compartment and low-key profile for commuting or a light weekend carry.',
       categoryIds: ['cat-accessories'],
       tags: ['bestseller'],
-      images: [{ id: 'img-field-pack', url: IMAGE('Field Pack'), alt: 'Field Pack backpack' }],
+      images: [productMedia(2)],
       options: [],
       variants: [variant('var-field-pack', 'FIELD-18L', 'Default', 6400, 22, {})],
       rating: 4.8,
@@ -129,10 +189,10 @@ function baseDataset(): DemoDataset {
       slug: 'studio-cap',
       title: 'Studio Cap',
       subtitle: 'Low-profile cotton cap',
-      description: 'Simple one-variant product for baseline card and cart states.',
+      description: 'A low-profile everyday cap with a soft crown, curved brim and minimal finish designed to work with the rest of the collection.',
       categoryIds: ['cat-accessories'],
       tags: ['new'],
-      images: [{ id: 'img-studio-cap', url: IMAGE('Studio Cap'), alt: 'Studio Cap' }],
+      images: [productMedia(3)],
       options: [],
       variants: [variant('var-studio-cap', 'CAP-001', 'Default', 2400, 30, {})],
       rating: 4.2,
@@ -191,7 +251,7 @@ function baseDataset(): DemoDataset {
       id: 'promo-welcome10',
       code: 'WELCOME10',
       title: 'Welcome 10%',
-      description: 'Demo promotion used to exercise coupon states.',
+      description: 'Take 10% off your first BeeECOM order.',
       kind: 'percentage',
       value: 10,
       active: true,
@@ -202,7 +262,7 @@ function baseDataset(): DemoDataset {
       id: 'promo-15off',
       code: 'TAKE15',
       title: '$15 off',
-      description: 'Fixed discount fixture.',
+      description: 'Limited campaign: take $15 off an eligible cart.',
       kind: 'fixed',
       value: 1500,
       active: false,
@@ -303,6 +363,7 @@ function makeLargeCatalog(base: DemoDataset): Product[] {
   const template = base.products[0]!;
   return Array.from({ length: 80 }, (_, index) => {
     const n = index + 1;
+    const media = productMedia(index % REAL_PRODUCT_MEDIA.length);
     return {
       ...clone(template),
       id: `prod-stress-${String(n).padStart(3, '0')}`,
@@ -312,7 +373,7 @@ function makeLargeCatalog(base: DemoDataset): Product[] {
       featured: n <= 8,
       rating: 3.5 + (n % 15) / 10,
       reviewCount: n * 3,
-      images: [{ id: `img-stress-${n}`, url: IMAGE(`Stress ${n}`), alt: `Stress Product ${n}` }],
+      images: [{ ...media, id: `img-stress-${n}`, alt: `Stress Product ${n}` }],
       variants: [variant(`var-stress-${n}`, `STRESS-${String(n).padStart(3, '0')}`, 'Default', 1500 + n * 25, (n * 7) % 31, {})],
     };
   });
