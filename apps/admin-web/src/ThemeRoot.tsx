@@ -4,6 +4,7 @@ import {
   ThemePreferenceControl,
   type ThemePreference,
 } from '@beeecom/app-ui';
+import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
 
@@ -27,9 +28,9 @@ export function ThemeRoot() {
   }, []);
 
   return (
-    <>
+    <BeeUIProvider>
       <App />
       <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
-    </>
+    </BeeUIProvider>
   );
 }
