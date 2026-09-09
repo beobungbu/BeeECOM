@@ -46,9 +46,18 @@ export function App() {
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
 
-  const loadMessages = React.useCallback(async (selectedThreadId: string) => {
-    setMessages(await api.chat.listMessages(selectedThreadId));
+  const replaceThread = React.useCallback((updated: ChatThread) => {
+    setThreads((current) => current.map((thread) => thread.id === updated.id ? updated : thread));
   }, []);
+
+  const loadMessages = React.useCallback(async (selectedThreadId: string) => {
+    const [history, readThread] = await Promise.all([
+      api.chat.listMessages(selectedThreadId),
+      api.chat.markRead(selectedThreadId, { readerRole: 'support-agent' }),
+    ]);
+    setMessages(history);
+    replaceThread(readThread);
+  }, [replaceThread]);
 
   const refresh = React.useCallback(async () => {
     setLoading(true);
@@ -90,11 +99,9 @@ export function App() {
       onEvent(event) {
         setMessages((current) => appendMessage(current, event.message));
         if (event.message.senderRole === 'customer') {
-          setThreads((current) => current.map((thread) => (
-            thread.id === activeThreadId
-              ? { ...thread, unreadByAgent: thread.unreadByAgent + 1, updatedAt: event.message.sentAt }
-              : thread
-          )));
+          void api.chat.markRead(activeThreadId, { readerRole: 'support-agent' })
+            .then(replaceThread)
+            .catch((cause) => console.warn('Unable to persist support-agent read state', cause));
         }
       },
       onStatus: setChatStatus,
@@ -104,7 +111,7 @@ export function App() {
       },
     });
     return () => subscription.close();
-  }, [loadMessages, threadId]);
+  }, [loadMessages, replaceThread, threadId]);
 
   async function changeThread(nextThreadId: string | undefined) {
     setThreadId(nextThreadId);
@@ -157,6 +164,9 @@ export function App() {
   );
   const activePromotions = promotions.filter((promotion) => promotion.active).length;
   const paidOrders = orders.filter((order) => order.paymentState === 'paid').length;
+  const selectedThread = threadId ? threads.find((thread) => thread.id === threadId) : undefined;
+  const customerOrders = selectedThread ? orders.filter((order) => order.customerId === selectedThread.customerId) : [];
+  const latestCustomerOrder = customerOrders[0];
 
   return (
     <BeeUIProvider>
@@ -271,6 +281,27 @@ export function App() {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {selectedThread ? (
+                    <Box className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Customer</Text>
+                        <Text variant="body">{selectedThread.customerId}</Text>
+                      </Card>
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Assigned agent</Text>
+                        <Text variant="body">{selectedThread.assignedAgentId ?? 'Unassigned'}</Text>
+                      </Card>
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Customer orders</Text>
+                        <Text variant="body">{customerOrders.length}{latestCustomerOrder ? ` · latest ${latestCustomerOrder.number}` : ''}</Text>
+                      </Card>
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Unread</Text>
+                        <Text variant="body">Agent {selectedThread.unreadByAgent} · customer {selectedThread.unreadByCustomer}</Text>
+                      </Card>
+                    </Box>
+                  ) : null}
 
                   <Box className="gap-2">
                     {messages.map((message) => (
