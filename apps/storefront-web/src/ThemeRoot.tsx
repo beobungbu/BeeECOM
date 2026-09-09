@@ -7,6 +7,7 @@ import {
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
+import { CartSheetConformance } from './CartSheetConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -27,9 +28,13 @@ export function ThemeRoot() {
     setPreference(next);
   }, []);
 
+  const content = window.location.pathname === '/conformance/cart-sheet'
+    ? <CartSheetConformance />
+    : <App />;
+
   return (
     <BeeUIProvider>
-      <App />
+      {content}
       <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
     </BeeUIProvider>
   );
