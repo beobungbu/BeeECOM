@@ -15,7 +15,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,3 +37,17 @@ jobs:
         run: pnpm --filter @beeecom/api-worker exec wrangler deploy --dry-run --config ../storefront-web/wrangler.jsonc
       - name: Validate Cloudflare Admin deployment bundle
         run: pnpm --filter @beeecom/api-worker exec wrangler deploy --dry-run --config ../admin-web/wrangler.jsonc
+      - name: Install Chromium for release E2E
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Release QA — Worker/D1/Web/Admin/realtime/a11y
+        run: pnpm qa:e2e
+      - name: Upload Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-release-evidence
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -11,6 +11,8 @@
     "typecheck": "pnpm build && pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "check": "pnpm typecheck && pnpm test",
+    "qa:e2e": "playwright test",
+    "qa:e2e:report": "playwright show-report",
     "dev:api": "pnpm --filter @beeecom/api-worker dev",
     "dev:storefront": "pnpm build && pnpm --filter @beeecom/storefront-web dev",
     "dev:admin": "pnpm build && pnpm --filter @beeecom/admin-web dev",
@@ -20,6 +22,8 @@
     "seed:check": "pnpm --filter @beeecom/dummy-data test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

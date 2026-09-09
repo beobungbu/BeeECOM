@@ -195,6 +195,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
         ) : <Text variant="body">No orders.</Text>}
         {selectedOrder ? (
           <Box className="gap-3">
+            <Text variant="title" accessibilityLabel={`Active order ${selectedOrder.number}`}>{selectedOrder.number}</Text>
             <Box className="flex-row flex-wrap gap-2">
               <Badge>{selectedOrder.state}</Badge><Badge>{selectedOrder.paymentState}</Badge><Badge>{selectedOrder.fulfillmentState}</Badge>
               <Text variant="body">{formatMoney(selectedOrder.total)} · customer {selectedOrder.customerId}</Text>
