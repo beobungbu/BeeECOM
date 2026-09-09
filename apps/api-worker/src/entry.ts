@@ -1,6 +1,7 @@
 import type { ApiResponse } from '@beeecom/contracts';
 import type { ChatMessage } from '@beeecom/domain';
 
+import { handleCatalogExtra } from './catalog-extra';
 import { handleChatLifecycle } from './chat-lifecycle';
 import coreWorker from './index';
 import {
@@ -9,6 +10,7 @@ import {
   proxyChatWebSocket,
   type DurableObjectNamespaceLike,
 } from './realtime';
+import { handleWishlistLifecycle } from './wishlist-lifecycle';
 
 export { ChatRoom };
 
@@ -71,6 +73,12 @@ export default {
       }
       return proxyChatWebSocket(env.CHAT_ROOMS, threadId, request);
     }
+
+    const catalogResponse = await handleCatalogExtra(request, env);
+    if (catalogResponse) return catalogResponse;
+
+    const wishlistResponse = await handleWishlistLifecycle(request, env);
+    if (wishlistResponse) return wishlistResponse;
 
     const lifecycleResponse = await handleChatLifecycle(request, env);
     if (lifecycleResponse) return lifecycleResponse;

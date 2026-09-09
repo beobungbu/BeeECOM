@@ -91,6 +91,12 @@ export interface Customer {
   createdAt: IsoDateTime;
 }
 
+export interface Wishlist {
+  customerId: Id;
+  productIds: Id[];
+  updatedAt: IsoDateTime;
+}
+
 export interface CartLine {
   id: Id;
   productId: Id;

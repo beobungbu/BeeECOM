@@ -22,6 +22,7 @@
     "@beemvp/beeui-ui": "0.86.2-rc.1",
     "@expo/metro-runtime": "57.0.14",
     "@gorhom/bottom-sheet": "5.2.14",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",
     "expo": "57.0.18",
     "react": "19.2.3",

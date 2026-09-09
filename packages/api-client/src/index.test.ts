@@ -71,6 +71,49 @@ describe('BeeEcom API client golden-commerce contracts', () => {
     ]);
   });
 
+  it('uses shared category discovery and persistent wishlist routes', async () => {
+    const calls: Array<{ url: string; method: string; body: string | null }> = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      calls.push({
+        url: String(input),
+        method: init?.method ?? 'GET',
+        body: typeof init?.body === 'string' ? init.body : null,
+      });
+      const url = String(input);
+      if (url.endsWith('/catalog/categories')) return success([]);
+      return success({ customerId: 'cust-ava', productIds: ['prod-field-pack'], updatedAt: '2026-09-09T00:00:00.000Z' });
+    };
+    const api = createBeeEcomClient({ baseUrl: 'https://demo.example/', fetchImpl });
+
+    await api.catalog.listCategories();
+    await api.wishlist.get('cust-ava');
+    await api.wishlist.add('cust-ava', { productId: 'prod-cloud-tee' });
+    await api.wishlist.remove('cust-ava', 'prod-cloud-tee');
+
+    expect(calls).toEqual([
+      {
+        url: 'https://demo.example/api/v1/catalog/categories',
+        method: 'GET',
+        body: null,
+      },
+      {
+        url: 'https://demo.example/api/v1/wishlist/cust-ava',
+        method: 'GET',
+        body: null,
+      },
+      {
+        url: 'https://demo.example/api/v1/wishlist/cust-ava/items',
+        method: 'POST',
+        body: JSON.stringify({ productId: 'prod-cloud-tee' }),
+      },
+      {
+        url: 'https://demo.example/api/v1/wishlist/cust-ava/items/prod-cloud-tee',
+        method: 'DELETE',
+        body: null,
+      },
+    ]);
+  });
+
   it('encodes order and support-inbox filters', async () => {
     const urls: string[] = [];
     const fetchImpl: typeof fetch = async (input) => {
