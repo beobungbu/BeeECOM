@@ -103,7 +103,7 @@ export interface Cart {
   id: Id;
   customerId: Id;
   lines: CartLine[];
-  couponCode?: string;
+  couponCode?: string | undefined;
   updatedAt: IsoDateTime;
 }
 

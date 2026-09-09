@@ -55,10 +55,27 @@ export interface CartAddLineInput {
   quantity: number;
 }
 
+export interface CartApplyCouponInput {
+  code: string;
+}
+
 export interface CheckoutInput {
   cartId: string;
   addressId: string;
-  paymentScenario?: 'success' | 'failure';
+  paymentScenario?: 'success' | 'failure' | undefined;
+}
+
+export interface OrderQuery {
+  customerId?: string | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
+}
+
+export interface ChatThreadQuery {
+  customerId?: string | undefined;
+  status?: 'open' | 'closed' | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
 }
 
 export interface CreateReviewInput {
@@ -119,11 +136,14 @@ export interface ApiContractMap {
   'GET /api/v1/catalog/products/:id': { response: Product };
   'GET /api/v1/cart/:id': { response: Cart };
   'POST /api/v1/cart/:id/lines': { body: CartAddLineInput; response: Cart };
+  'PATCH /api/v1/cart/:id/coupon': { body: CartApplyCouponInput; response: Cart };
   'POST /api/v1/checkout': { body: CheckoutInput; response: Order };
+  'GET /api/v1/orders': { query: OrderQuery; response: Page<Order> };
   'GET /api/v1/orders/:id': { response: Order };
   'GET /api/v1/customers/:id': { response: Customer };
   'GET /api/v1/promotions': { response: Promotion[] };
   'POST /api/v1/returns': { body: CreateReturnInput; response: ReturnRequest };
+  'GET /api/v1/chat/threads': { query: ChatThreadQuery; response: Page<ChatThread> };
   'GET /api/v1/chat/threads/:id': { response: ChatThread };
   'GET /api/v1/chat/threads/:id/messages': { response: ChatMessage[] };
   'POST /api/v1/chat/threads/:id/messages': { body: SendChatMessageInput; response: ChatMessage };
