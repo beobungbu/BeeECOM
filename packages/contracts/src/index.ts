@@ -1,5 +1,6 @@
 import type {
   Cart,
+  Category,
   ChatMessage,
   ChatThread,
   Customer,
@@ -167,6 +168,7 @@ export function isDemoScenarioName(value: string): value is DemoScenarioName {
 }
 
 export interface ApiContractMap {
+  'GET /api/v1/catalog/categories': { response: Category[] };
   'GET /api/v1/catalog/products': { query: CatalogQuery; response: Page<Product> };
   'GET /api/v1/catalog/products/:id': { response: Product };
   'GET /api/v1/cart/:id': { response: Cart };
