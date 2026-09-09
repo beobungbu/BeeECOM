@@ -84,10 +84,9 @@ test.describe('BeeUI external-consumer interaction contracts', () => {
     const featureAction = page.getByRole('button', { name: /^(Feature|Unfeature)$/ }).first();
     await featureAction.click();
 
-    await expect(page.getByText('Admin operation complete', { exact: true })).toBeVisible();
-    await expect(page.getByText(/featured merchandising/i)).toBeVisible();
-
     const liveRegion = page.locator('[aria-live]').filter({ hasText: 'Admin operation complete' });
     await expect(liveRegion).toBeVisible();
+    await expect(liveRegion.getByText('Admin operation complete', { exact: true })).toBeVisible();
+    await expect(liveRegion.getByText(/featured merchandising/i)).toBeVisible();
   });
 });
