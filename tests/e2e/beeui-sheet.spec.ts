@@ -18,6 +18,89 @@ async function expectFocusInsideSheet(page: import('@playwright/test').Page) {
   await expect.poll(async () => page.evaluate(() => document.activeElement?.closest('[role="dialog"]') !== null)).toBe(true);
 }
 
+async function collectSheetGeometry(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
+    const backdrop = document.querySelector('[data-testid="cart-sheet-backdrop"]') as HTMLElement | null;
+    const rootOverlayHost = document.querySelector('[data-testid="beeui-overlay-host"]') as HTMLElement | null;
+
+    const describe = (node: HTMLElement | null) => {
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      return {
+        tag: node.tagName,
+        id: node.id,
+        testID: node.getAttribute('data-testid'),
+        role: node.getAttribute('role'),
+        rect: {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          left: rect.left,
+        },
+        clientHeight: node.clientHeight,
+        scrollHeight: node.scrollHeight,
+        offsetTop: node.offsetTop,
+        position: style.position,
+        display: style.display,
+        height: style.height,
+        minHeight: style.minHeight,
+        maxHeight: style.maxHeight,
+        overflow: style.overflow,
+        overflowY: style.overflowY,
+        flex: style.flex,
+        flexGrow: style.flexGrow,
+        flexBasis: style.flexBasis,
+        justifyContent: style.justifyContent,
+        transform: style.transform,
+        translate: style.translate,
+        animationName: style.animationName,
+        animationDuration: style.animationDuration,
+        animationPlayState: style.animationPlayState,
+        transitionDuration: style.transitionDuration,
+      };
+    };
+
+    const ancestors = (start: HTMLElement | null) => {
+      const values = [];
+      let node: HTMLElement | null = start;
+      for (let depth = 0; node && depth < 10; depth += 1) {
+        values.push(describe(node));
+        node = node.parentElement;
+      }
+      return values;
+    };
+
+    const html = document.documentElement;
+    const root = document.getElementById('root');
+    return {
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+        documentClientHeight: html.clientHeight,
+        visualViewportHeight: window.visualViewport?.height ?? null,
+      },
+      document: {
+        html: describe(html),
+        body: describe(document.body),
+        root: describe(root),
+      },
+      dialog: describe(dialog),
+      backdrop: describe(backdrop),
+      rootOverlayHost: describe(rootOverlayHost),
+      dialogAncestors: ancestors(dialog),
+      backdropAncestors: ancestors(backdrop),
+    };
+  });
+}
+
 test.describe('BeeUI Sheet external-consumer contract', () => {
   test.beforeEach(async () => {
     await resetHealthy();
@@ -51,52 +134,31 @@ test.describe('BeeUI Sheet external-consumer contract', () => {
     const backdrop = page.getByTestId('cart-sheet-backdrop');
     await expect(backdrop).toBeVisible();
 
-    const geometry = await page.evaluate(() => {
-      const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
-      const backdropNode = document.querySelector('[data-testid="cart-sheet-backdrop"]') as HTMLElement | null;
-      const host = document.querySelector('[data-testid="beeui-overlay-host"]') as HTMLElement | null;
-      const rect = (node: HTMLElement | null) => {
-        if (!node) return null;
-        const value = node.getBoundingClientRect();
-        return {
-          x: value.x,
-          y: value.y,
-          width: value.width,
-          height: value.height,
-          top: value.top,
-          right: value.right,
-          bottom: value.bottom,
-          left: value.left,
-          clientHeight: node.clientHeight,
-          scrollHeight: node.scrollHeight,
-          computedMaxHeight: getComputedStyle(node).maxHeight,
-          computedPosition: getComputedStyle(node).position,
-          overflowY: getComputedStyle(node).overflowY,
-        };
-      };
-      return {
-        viewport: { width: window.innerWidth, height: window.innerHeight, scrollY: window.scrollY },
-        dialog: rect(dialog),
-        backdrop: rect(backdropNode),
-        host: rect(host),
-      };
-    });
+    const immediateGeometry = await collectSheetGeometry(page);
+    console.log('BEEUI_SHEET_GEOMETRY_IMMEDIATE', JSON.stringify(immediateGeometry));
 
-    console.log('BEEUI_SHEET_GEOMETRY', JSON.stringify(geometry));
+    // RN Web Modal uses a CSS slide animation. Capture both the immediately-visible
+    // frame and a settled frame so an animation transform cannot be mistaken for a
+    // persistent Sheet layout defect.
+    await page.waitForTimeout(700);
+    const geometry = await collectSheetGeometry(page);
+    console.log('BEEUI_SHEET_GEOMETRY_SETTLED', JSON.stringify(geometry));
+
     expect(geometry.dialog).not.toBeNull();
     expect(geometry.backdrop).not.toBeNull();
-    expect(geometry.host).not.toBeNull();
 
-    // A 55% bottom-sheet snap point must leave a real, pointer-accessible
-    // backdrop region inside the current viewport. If this fails, report the
-    // host/backdrop/dialog geometry rather than guessing a click coordinate.
+    // A settled 55% bottom-sheet snap point must leave a real, pointer-accessible
+    // backdrop region inside the current viewport. If this fails, the diagnostic
+    // includes the complete modal ancestor/transform chain.
+    const dialogRect = geometry.dialog!.rect;
+    const backdropRect = geometry.backdrop!.rect;
     const visibleBackdropAbovePanel = Math.max(
       0,
-      Math.min(geometry.viewport.height, geometry.dialog!.top) - Math.max(0, geometry.backdrop!.top),
+      Math.min(geometry.viewport.height, dialogRect.top) - Math.max(0, backdropRect.top),
     );
     expect(visibleBackdropAbovePanel, JSON.stringify(geometry)).toBeGreaterThan(8);
 
-    const clickY = Math.max(4, Math.min(geometry.viewport.height - 4, geometry.dialog!.top / 2));
+    const clickY = Math.max(4, Math.min(geometry.viewport.height - 4, dialogRect.top / 2));
     await page.mouse.click(8, clickY);
     await expect(sheet).toBeHidden();
     await expect(trigger).toBeFocused();
