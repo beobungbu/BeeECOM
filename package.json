@@ -13,6 +13,7 @@
     "check": "pnpm typecheck && pnpm test",
     "qa:e2e": "playwright test",
     "qa:e2e:report": "playwright show-report",
+    "qa:budgets": "node scripts/check-bundle-budgets.mjs",
     "dev:api": "pnpm --filter @beeecom/api-worker dev",
     "dev:storefront": "pnpm build && pnpm --filter @beeecom/storefront-web dev",
     "dev:admin": "pnpm build && pnpm --filter @beeecom/admin-web dev",
