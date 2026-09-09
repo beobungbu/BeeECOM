@@ -4,12 +4,33 @@ const STOREFRONT = 'http://127.0.0.1:5173';
 const STORAGE_KEY = 'beeecom.theme.preference';
 
 async function startWithLightGlobalTheme(page: Page) {
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.stack ?? error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+
   await page.addInitScript((key) => {
     window.localStorage.setItem(key, 'light');
   }, STORAGE_KEY);
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto(`${STOREFRONT}/conformance/theme-scope`);
-  await expect(page.getByText('Theme preference: Light')).toBeVisible();
+
+  try {
+    await expect(page.getByText('Theme preference: Light')).toBeVisible();
+  } catch (cause) {
+    const body = await page.locator('body').innerText().catch(() => '<body unavailable>');
+    throw new Error(
+      [
+        'Theme-scope acceptance route failed to render.',
+        `pageErrors=${JSON.stringify(pageErrors)}`,
+        `consoleErrors=${JSON.stringify(consoleErrors)}`,
+        `body=${JSON.stringify(body)}`,
+        `original=${cause instanceof Error ? cause.message : String(cause)}`,
+      ].join('\n'),
+    );
+  }
 }
 
 async function token(page: Page, id: string): Promise<string> {
