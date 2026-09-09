@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BeeEcomApiError, createBeeEcomClient } from './index';
+import { createBeeEcomClient } from './index';
 
 function success(data: unknown) {
   return new Response(JSON.stringify({
@@ -65,7 +65,7 @@ describe('BeeEcom API client golden-commerce contracts', () => {
     }), { status: 409, headers: { 'content-type': 'application/json' } });
     const api = createBeeEcomClient({ baseUrl: 'https://demo.example', fetchImpl });
 
-    await expect(api.carts.applyCoupon('cart-ava', { code: 'NOPE' })).rejects.toMatchObject<BeeEcomApiError>({
+    await expect(api.carts.applyCoupon('cart-ava', { code: 'NOPE' })).rejects.toMatchObject({
       name: 'BeeEcomApiError',
       code: 'COUPON_INVALID',
       requestId: 'req-404',
