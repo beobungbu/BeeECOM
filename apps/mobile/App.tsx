@@ -5,6 +5,7 @@ import { formatMoney, ProductCard } from '@beeecom/app-ui';
 import {
   calculateCartTotals,
   type Cart,
+  type Category,
   type ChatMessage,
   type Customer,
   type Order,
@@ -60,6 +61,8 @@ function NavButton(props: { active: boolean; label: string; onPress: () => void 
 export default function App() {
   const [section, setSection] = React.useState<MobileSection>('shop');
   const [products, setProducts] = React.useState<Product[]>([]);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [categoryId, setCategoryId] = React.useState('all');
   const [selected, setSelected] = React.useState<Product | null>(null);
   const [variantId, setVariantId] = React.useState<string | undefined>();
   const [quantity, setQuantity] = React.useState(1);
@@ -96,8 +99,9 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [page, currentCart, currentCustomer, promoList, orderPage, history] = await Promise.all([
+      const [page, categoryList, currentCart, currentCustomer, promoList, orderPage, history] = await Promise.all([
         api.catalog.listProducts({ sort: 'featured', pageSize: 24 }),
+        api.catalog.listCategories(),
         api.carts.get(CART_ID),
         api.customers.get(CUSTOMER_ID),
         api.promotions.list(),
@@ -106,6 +110,7 @@ export default function App() {
         api.chat.markRead(THREAD_ID, { readerRole: 'customer' }),
       ]);
       setProducts(page.items);
+      setCategories(categoryList);
       setCart(currentCart);
       setCustomer(currentCustomer);
       setPromotions(promoList);
@@ -166,6 +171,7 @@ export default function App() {
     try {
       const page = await api.catalog.listProducts({
         q: search.trim() || undefined,
+        category: categoryId === 'all' ? undefined : categoryId,
         sort: 'featured',
         pageSize: 24,
       });
@@ -313,20 +319,34 @@ export default function App() {
               {!loading && section === 'shop' ? (
                 <Box className="gap-4">
                   <Card className="gap-3 p-5">
-                    <Text variant="title">Catalog search</Text>
+                    <Text variant="title">Catalog discovery</Text>
                     <Input
                       accessibilityLabel="Search products"
                       value={search}
                       onChangeText={setSearch}
                       placeholder="Search products"
                     />
-                    <Button disabled={busy} onPress={() => void searchCatalog()}>Search</Button>
+                    <Box className="gap-2">
+                      <Text variant="body">Category</Text>
+                      <Select value={categoryId} onValueChange={setCategoryId}>
+                        <SelectTrigger accessibilityLabel="Product category">
+                          <SelectValue placeholder="All categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All categories</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Box>
+                    <Button disabled={busy} onPress={() => void searchCatalog()}>Apply filters</Button>
                   </Card>
 
                   {products.length === 0 ? (
                     <Card className="gap-2 p-5">
                       <Text variant="title">No products</Text>
-                      <Text variant="body">Try another query or reset the deterministic demo scenario.</Text>
+                      <Text variant="body">Try another query/category or reset the deterministic demo scenario.</Text>
                     </Card>
                   ) : products.map((product) => (
                     <ProductCard key={product.id} product={product} onPress={chooseProduct} />
