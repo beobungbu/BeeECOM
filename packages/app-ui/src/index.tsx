@@ -12,7 +12,7 @@ export function formatMoney(value: Money): string {
 
 export interface ProductCardProps {
   product: Product;
-  onPress?: (product: Product) => void;
+  onPress?: ((product: Product) => void) | undefined;
 }
 
 export function ProductCard({ product, onPress }: ProductCardProps) {
@@ -47,7 +47,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
 
 export interface ProductGridProps {
   products: Product[];
-  onProductPress?: (product: Product) => void;
+  onProductPress?: ((product: Product) => void) | undefined;
 }
 
 export function ProductGrid({ products, onProductPress }: ProductGridProps) {
