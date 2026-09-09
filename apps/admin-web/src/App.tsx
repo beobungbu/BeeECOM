@@ -1,4 +1,4 @@
-import { createBeeEcomClient } from '@beeecom/api-client';
+import { createBeeEcomClient, type ChatRealtimeStatus } from '@beeecom/api-client';
 import { formatMoney } from '@beeecom/app-ui';
 import type { ChatMessage, ChatThread, Order, Product, Promotion } from '@beeecom/domain';
 import {
@@ -28,6 +28,10 @@ const api = createBeeEcomClient({
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8787',
 });
 
+function appendMessage(messages: ChatMessage[], message: ChatMessage): ChatMessage[] {
+  return messages.some((item) => item.id === message.id) ? messages : [...messages, message];
+}
+
 export function App() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [promotions, setPromotions] = React.useState<Promotion[]>([]);
@@ -35,15 +39,25 @@ export function App() {
   const [threads, setThreads] = React.useState<ChatThread[]>([]);
   const [threadId, setThreadId] = React.useState<string | undefined>();
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const [chatStatus, setChatStatus] = React.useState<ChatRealtimeStatus>('closed');
   const [agentDraft, setAgentDraft] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
 
-  const loadMessages = React.useCallback(async (selectedThreadId: string) => {
-    setMessages(await api.chat.listMessages(selectedThreadId));
+  const replaceThread = React.useCallback((updated: ChatThread) => {
+    setThreads((current) => current.map((thread) => thread.id === updated.id ? updated : thread));
   }, []);
+
+  const loadMessages = React.useCallback(async (selectedThreadId: string) => {
+    const [history, readThread] = await Promise.all([
+      api.chat.listMessages(selectedThreadId),
+      api.chat.markRead(selectedThreadId, { readerRole: 'support-agent' }),
+    ]);
+    setMessages(history);
+    replaceThread(readThread);
+  }, [replaceThread]);
 
   const refresh = React.useCallback(async () => {
     setLoading(true);
@@ -74,6 +88,31 @@ export function App() {
     void refresh();
   }, [refresh]);
 
+  React.useEffect(() => {
+    if (!threadId) {
+      setChatStatus('closed');
+      return undefined;
+    }
+
+    const activeThreadId = threadId;
+    const subscription = api.chat.subscribe(activeThreadId, {
+      onEvent(event) {
+        setMessages((current) => appendMessage(current, event.message));
+        if (event.message.senderRole === 'customer') {
+          void api.chat.markRead(activeThreadId, { readerRole: 'support-agent' })
+            .then(replaceThread)
+            .catch((cause) => console.warn('Unable to persist support-agent read state', cause));
+        }
+      },
+      onStatus: setChatStatus,
+      onResync: () => loadMessages(activeThreadId),
+      onError(cause) {
+        console.warn('Support inbox realtime transport error', cause);
+      },
+    });
+    return () => subscription.close();
+  }, [loadMessages, replaceThread, threadId]);
+
   async function changeThread(nextThreadId: string | undefined) {
     setThreadId(nextThreadId);
     if (!nextThreadId) {
@@ -98,16 +137,16 @@ export function App() {
     setError(null);
     setNotice(null);
     try {
-      await api.chat.sendMessage(threadId, {
+      const message = await api.chat.sendMessage(threadId, {
         threadId,
         senderId: 'agent-sam',
         senderRole: 'support-agent',
         body,
         clientMessageId: `web-agent-${Date.now()}`,
       });
-      await loadMessages(threadId);
+      setMessages((current) => appendMessage(current, message));
       setAgentDraft('');
-      setNotice('Reply persisted. The customer storefront will see it after refresh.');
+      setNotice('Reply persisted to D1 and published to connected customer clients.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to persist support reply.');
     } finally {
@@ -125,6 +164,9 @@ export function App() {
   );
   const activePromotions = promotions.filter((promotion) => promotion.active).length;
   const paidOrders = orders.filter((order) => order.paymentState === 'paid').length;
+  const selectedThread = threadId ? threads.find((thread) => thread.id === threadId) : undefined;
+  const customerOrders = selectedThread ? orders.filter((order) => order.customerId === selectedThread.customerId) : [];
+  const latestCustomerOrder = customerOrders[0];
 
   return (
     <BeeUIProvider>
@@ -219,8 +261,11 @@ export function App() {
           {!loading ? (
             <Card className="gap-4 p-4 md:p-6">
               <Box className="gap-1">
-                <Text variant="title">Support inbox</Text>
-                <Text variant="body">History is read from D1; duplicate sends are guarded by `clientMessageId`.</Text>
+                <Box className="flex-row flex-wrap items-center gap-2">
+                  <Text variant="title">Support inbox</Text>
+                  <Badge>{chatStatus}</Badge>
+                </Box>
+                <Text variant="body">D1 history is canonical; Durable Objects fan out persisted messages and reconnect resyncs history.</Text>
               </Box>
               {threadId ? (
                 <>
@@ -236,6 +281,27 @@ export function App() {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {selectedThread ? (
+                    <Box className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Customer</Text>
+                        <Text variant="body">{selectedThread.customerId}</Text>
+                      </Card>
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Assigned agent</Text>
+                        <Text variant="body">{selectedThread.assignedAgentId ?? 'Unassigned'}</Text>
+                      </Card>
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Customer orders</Text>
+                        <Text variant="body">{customerOrders.length}{latestCustomerOrder ? ` · latest ${latestCustomerOrder.number}` : ''}</Text>
+                      </Card>
+                      <Card className="gap-1 p-4">
+                        <Text variant="body">Unread</Text>
+                        <Text variant="body">Agent {selectedThread.unreadByAgent} · customer {selectedThread.unreadByCustomer}</Text>
+                      </Card>
+                    </Box>
+                  ) : null}
 
                   <Box className="gap-2">
                     {messages.map((message) => (

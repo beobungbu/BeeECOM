@@ -1,8 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "beeecom-api",
-  "main": "src/index.ts",
-  "compatibility_date": "2026-09-01",
+  "main": "src/entry.ts",
+  "compatibility_date": "2026-09-09",
   "d1_databases": [
     {
       "binding": "DB",
@@ -11,6 +11,20 @@
       "migrations_dir": "migrations"
     }
   ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CHAT_ROOMS",
+        "class_name": "ChatRoom"
+      }
+    ]
+  },
+  "exports": {
+    "ChatRoom": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
   "vars": {
     "DEFAULT_SCENARIO": "healthy",
     "CORS_ORIGINS": "http://localhost:5173,http://localhost:5174"

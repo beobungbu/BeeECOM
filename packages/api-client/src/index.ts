@@ -1,12 +1,16 @@
+import { isChatRealtimeEvent } from '@beeecom/contracts';
 import type {
   ApiResponse,
   CartAddLineInput,
   CartApplyCouponInput,
   CatalogQuery,
+  ChatRealtimeEvent,
   ChatThreadQuery,
   CheckoutInput,
+  CreateChatThreadInput,
   DemoResetInput,
   DemoResetResult,
+  MarkChatReadInput,
   OrderQuery,
   Page,
   SendChatMessageInput,
@@ -34,9 +38,23 @@ export class BeeEcomApiError extends Error {
   }
 }
 
+export type ChatRealtimeStatus = 'connecting' | 'connected' | 'reconnecting' | 'closed';
+
+export interface ChatRealtimeCallbacks {
+  onEvent(event: ChatRealtimeEvent): void;
+  onStatus?(status: ChatRealtimeStatus): void;
+  onResync?(): void | Promise<void>;
+  onError?(error: unknown): void;
+}
+
+export interface ChatRealtimeSubscription {
+  close(): void;
+}
+
 export interface BeeEcomClientOptions {
   baseUrl: string;
   fetchImpl?: typeof fetch;
+  webSocketFactory?: (url: string) => WebSocket;
   getAccessToken?: () => string | undefined | Promise<string | undefined>;
 }
 
@@ -71,9 +89,18 @@ function encodeChatThreadQuery(input: ChatThreadQuery): string {
   return query ? `?${query}` : '';
 }
 
+export function toWebSocketUrl(baseUrl: string, path: string): string {
+  const url = new URL(path, `${baseUrl.replace(/\/$/, '')}/`);
+  if (url.protocol === 'http:') url.protocol = 'ws:';
+  else if (url.protocol === 'https:') url.protocol = 'wss:';
+  else throw new Error(`Unsupported API URL protocol: ${url.protocol}`);
+  return url.toString();
+}
+
 export function createBeeEcomClient(options: BeeEcomClientOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl.replace(/\/$/, '');
+  const webSocketFactory = options.webSocketFactory ?? ((url: string) => new WebSocket(url));
 
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const token = await options.getAccessToken?.();
@@ -88,6 +115,68 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       throw new BeeEcomApiError(payload.error.code, payload.error.message, payload.meta.requestId);
     }
     return payload.data;
+  }
+
+  function subscribeToChat(id: string, callbacks: ChatRealtimeCallbacks): ChatRealtimeSubscription {
+    const url = toWebSocketUrl(baseUrl, `/ws/chat/${encodeURIComponent(id)}`);
+    const reconnectDelays = [500, 1_000, 2_000, 5_000] as const;
+    let socket: WebSocket | undefined;
+    let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    let connectedBefore = false;
+    let reconnectAttempt = 0;
+
+    const connect = () => {
+      if (stopped) return;
+      callbacks.onStatus?.(connectedBefore ? 'reconnecting' : 'connecting');
+      socket = webSocketFactory(url);
+
+      socket.onopen = () => {
+        const isReconnect = connectedBefore;
+        connectedBefore = true;
+        reconnectAttempt = 0;
+        callbacks.onStatus?.('connected');
+        if (isReconnect) {
+          Promise.resolve(callbacks.onResync?.()).catch((error) => callbacks.onError?.(error));
+        }
+      };
+
+      socket.onmessage = (event) => {
+        if (typeof event.data !== 'string') return;
+        try {
+          const parsed = JSON.parse(event.data) as unknown;
+          if (isChatRealtimeEvent(parsed) && parsed.threadId === id) callbacks.onEvent(parsed);
+        } catch (error) {
+          callbacks.onError?.(error);
+        }
+      };
+
+      socket.onerror = (event) => {
+        callbacks.onError?.(event);
+      };
+
+      socket.onclose = () => {
+        if (stopped) {
+          callbacks.onStatus?.('closed');
+          return;
+        }
+        callbacks.onStatus?.('reconnecting');
+        const delay = reconnectDelays[Math.min(reconnectAttempt, reconnectDelays.length - 1)]!;
+        reconnectAttempt += 1;
+        reconnectTimer = setTimeout(connect, delay);
+      };
+    };
+
+    connect();
+
+    return {
+      close() {
+        stopped = true;
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (socket && socket.readyState < 2) socket.close(1000, 'Subscription closed');
+        callbacks.onStatus?.('closed');
+      },
+    };
   }
 
   return {
@@ -141,8 +230,20 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       listThreads(query: ChatThreadQuery = {}) {
         return request<Page<ChatThread>>(`/api/v1/chat/threads${encodeChatThreadQuery(query)}`);
       },
+      createThread(input: CreateChatThreadInput) {
+        return request<ChatThread>('/api/v1/chat/threads', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        });
+      },
       getThread(id: string) {
         return request<ChatThread>(`/api/v1/chat/threads/${encodeURIComponent(id)}`);
+      },
+      markRead(id: string, input: MarkChatReadInput) {
+        return request<ChatThread>(`/api/v1/chat/threads/${encodeURIComponent(id)}/read`, {
+          method: 'PATCH',
+          body: JSON.stringify(input),
+        });
       },
       listMessages(id: string) {
         return request<ChatMessage[]>(`/api/v1/chat/threads/${encodeURIComponent(id)}/messages`);
@@ -152,6 +253,12 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
           method: 'POST',
           body: JSON.stringify(input),
         });
+      },
+      webSocketUrl(id: string) {
+        return toWebSocketUrl(baseUrl, `/ws/chat/${encodeURIComponent(id)}`);
+      },
+      subscribe(id: string, callbacks: ChatRealtimeCallbacks) {
+        return subscribeToChat(id, callbacks);
       },
     },
     demo: {

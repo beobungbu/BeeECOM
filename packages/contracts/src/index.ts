@@ -78,6 +78,16 @@ export interface ChatThreadQuery {
   pageSize?: number | undefined;
 }
 
+export interface CreateChatThreadInput {
+  customerId: string;
+  subject: string;
+  assignedAgentId?: string | undefined;
+}
+
+export interface MarkChatReadInput {
+  readerRole: 'customer' | 'support-agent';
+}
+
 export interface CreateReviewInput {
   productId: string;
   customerId: string;
@@ -98,6 +108,31 @@ export interface SendChatMessageInput {
   senderRole: 'customer' | 'support-agent';
   body: string;
   clientMessageId: string;
+}
+
+export interface ChatMessagePersistedEvent {
+  type: 'message.persisted';
+  threadId: string;
+  message: ChatMessage;
+}
+
+export type ChatRealtimeEvent = ChatMessagePersistedEvent;
+
+export function isChatRealtimeEvent(value: unknown): value is ChatRealtimeEvent {
+  if (!value || typeof value !== 'object') return false;
+  const event = value as Record<string, unknown>;
+  if (event.type !== 'message.persisted' || typeof event.threadId !== 'string') return false;
+  const message = event.message;
+  if (!message || typeof message !== 'object') return false;
+  const record = message as Record<string, unknown>;
+  return (
+    typeof record.id === 'string'
+    && record.threadId === event.threadId
+    && typeof record.senderId === 'string'
+    && (record.senderRole === 'customer' || record.senderRole === 'support-agent')
+    && typeof record.body === 'string'
+    && typeof record.sentAt === 'string'
+  );
 }
 
 export interface DemoResetInput {
@@ -144,7 +179,9 @@ export interface ApiContractMap {
   'GET /api/v1/promotions': { response: Promotion[] };
   'POST /api/v1/returns': { body: CreateReturnInput; response: ReturnRequest };
   'GET /api/v1/chat/threads': { query: ChatThreadQuery; response: Page<ChatThread> };
+  'POST /api/v1/chat/threads': { body: CreateChatThreadInput; response: ChatThread };
   'GET /api/v1/chat/threads/:id': { response: ChatThread };
+  'PATCH /api/v1/chat/threads/:id/read': { body: MarkChatReadInput; response: ChatThread };
   'GET /api/v1/chat/threads/:id/messages': { response: ChatMessage[] };
   'POST /api/v1/chat/threads/:id/messages': { body: SendChatMessageInput; response: ChatMessage };
   'GET /api/v1/demo/personas': { response: DemoPersona[] };
