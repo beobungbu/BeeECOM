@@ -127,12 +127,12 @@ test.describe('Golden customer → Admin → support journey', () => {
 
     const customerMessage = `Realtime customer QA ${Date.now()}`;
     await customerPage.getByLabel('Support message').fill(customerMessage);
-    await customerPage.getByRole('button', { name: 'Send message' }).click();
+    await customerPage.getByRole('button', { name: 'Send', exact: true }).click();
     await expect(adminPage.getByText(new RegExp(customerMessage))).toBeVisible({ timeout: 15_000 });
 
     const agentReply = `Realtime agent QA ${Date.now()}`;
     await adminPage.getByLabel('Agent reply').fill(agentReply);
-    await adminPage.getByRole('button', { name: 'Reply' }).click();
+    await adminPage.getByRole('button', { name: 'Reply', exact: true }).click();
     await expect(customerPage.getByText(new RegExp(agentReply))).toBeVisible({ timeout: 15_000 });
 
     await api.dispose();
