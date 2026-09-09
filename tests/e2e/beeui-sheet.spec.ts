@@ -50,10 +50,54 @@ test.describe('BeeUI Sheet external-consumer contract', () => {
     await expect(sheet).toBeVisible();
     const backdrop = page.getByTestId('cart-sheet-backdrop');
     await expect(backdrop).toBeVisible();
-    const sheetBox = await sheet.boundingBox();
-    expect(sheetBox).not.toBeNull();
-    expect(sheetBox!.y).toBeGreaterThan(8);
-    await page.mouse.click(8, Math.max(4, sheetBox!.y / 2));
+
+    const geometry = await page.evaluate(() => {
+      const dialog = document.querySelector('[role="dialog"]') as HTMLElement | null;
+      const backdropNode = document.querySelector('[data-testid="cart-sheet-backdrop"]') as HTMLElement | null;
+      const host = document.querySelector('[data-testid="beeui-overlay-host"]') as HTMLElement | null;
+      const rect = (node: HTMLElement | null) => {
+        if (!node) return null;
+        const value = node.getBoundingClientRect();
+        return {
+          x: value.x,
+          y: value.y,
+          width: value.width,
+          height: value.height,
+          top: value.top,
+          right: value.right,
+          bottom: value.bottom,
+          left: value.left,
+          clientHeight: node.clientHeight,
+          scrollHeight: node.scrollHeight,
+          computedMaxHeight: getComputedStyle(node).maxHeight,
+          computedPosition: getComputedStyle(node).position,
+          overflowY: getComputedStyle(node).overflowY,
+        };
+      };
+      return {
+        viewport: { width: window.innerWidth, height: window.innerHeight, scrollY: window.scrollY },
+        dialog: rect(dialog),
+        backdrop: rect(backdropNode),
+        host: rect(host),
+      };
+    });
+
+    console.log('BEEUI_SHEET_GEOMETRY', JSON.stringify(geometry));
+    expect(geometry.dialog).not.toBeNull();
+    expect(geometry.backdrop).not.toBeNull();
+    expect(geometry.host).not.toBeNull();
+
+    // A 55% bottom-sheet snap point must leave a real, pointer-accessible
+    // backdrop region inside the current viewport. If this fails, report the
+    // host/backdrop/dialog geometry rather than guessing a click coordinate.
+    const visibleBackdropAbovePanel = Math.max(
+      0,
+      Math.min(geometry.viewport.height, geometry.dialog!.top) - Math.max(0, geometry.backdrop!.top),
+    );
+    expect(visibleBackdropAbovePanel, JSON.stringify(geometry)).toBeGreaterThan(8);
+
+    const clickY = Math.max(4, Math.min(geometry.viewport.height - 4, geometry.dialog!.top / 2));
+    await page.mouse.click(8, clickY);
     await expect(sheet).toBeHidden();
     await expect(trigger).toBeFocused();
   });
