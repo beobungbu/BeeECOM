@@ -81,7 +81,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
 
   React.useEffect(() => {
     void refreshQueues().catch((cause) => props.onError(cause instanceof Error ? cause.message : 'Unable to load Admin queues.'));
-  }, [props, refreshQueues]);
+  }, [refreshQueues]);
 
   async function run(action: () => Promise<unknown>, success: string, refreshQueuesToo = false) {
     setBusy(true);
@@ -119,12 +119,8 @@ export function OperationsPanels(props: OperationsPanelsProps) {
         </Box>
         {productId ? (
           <Select value={productId} onValueChange={chooseProduct}>
-            <SelectTrigger accessibilityLabel="Admin product">
-              <SelectValue placeholder="Choose product" />
-            </SelectTrigger>
-            <SelectContent>
-              {props.products.map((product) => <SelectItem key={product.id} value={product.id}>{product.title}</SelectItem>)}
-            </SelectContent>
+            <SelectTrigger accessibilityLabel="Admin product"><SelectValue placeholder="Choose product" /></SelectTrigger>
+            <SelectContent>{props.products.map((product) => <SelectItem key={product.id} value={product.id}>{product.title}</SelectItem>)}</SelectContent>
           </Select>
         ) : <Text variant="body">No products in current scenario.</Text>}
 
@@ -134,21 +130,14 @@ export function OperationsPanels(props: OperationsPanelsProps) {
               <Text variant="title">Merchandising</Text>
               <Input accessibilityLabel="Product title" value={productTitle} onChangeText={setProductTitle} placeholder="Product title" />
               <Box className="flex-row flex-wrap gap-2">
-                <Button
-                  disabled={busy || !productTitle.trim()}
-                  onPress={() => void run(
-                    () => props.api.admin.products.update(selectedProduct.id, { title: productTitle, featured: selectedProduct.featured }),
-                    'Product metadata persisted.',
-                  )}
-                >Save title</Button>
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onPress={() => void run(
-                    () => props.api.admin.products.update(selectedProduct.id, { featured: !selectedProduct.featured }),
-                    selectedProduct.featured ? 'Product removed from featured merchandising.' : 'Product promoted to featured merchandising.',
-                  )}
-                >{selectedProduct.featured ? 'Unfeature' : 'Feature'}</Button>
+                <Button disabled={busy || !productTitle.trim()} onPress={() => void run(
+                  () => props.api.admin.products.update(selectedProduct.id, { title: productTitle, featured: selectedProduct.featured }),
+                  'Product metadata persisted.',
+                )}>Save title</Button>
+                <Button variant="outline" disabled={busy} onPress={() => void run(
+                  () => props.api.admin.products.update(selectedProduct.id, { featured: !selectedProduct.featured }),
+                  selectedProduct.featured ? 'Product removed from featured merchandising.' : 'Product promoted to featured merchandising.',
+                )}>{selectedProduct.featured ? 'Unfeature' : 'Feature'}</Button>
               </Box>
             </Card>
 
@@ -156,14 +145,10 @@ export function OperationsPanels(props: OperationsPanelsProps) {
               <Text variant="title">Inventory adjustment</Text>
               {variantId ? (
                 <Select value={variantId} onValueChange={setVariantId}>
-                  <SelectTrigger accessibilityLabel="Inventory variant">
-                    <SelectValue placeholder="Choose variant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedProduct.variants.map((variant) => (
-                      <SelectItem key={variant.id} value={variant.id}>{variant.sku} · {variant.inventoryQuantity} · {variant.inventoryState}</SelectItem>
-                    ))}
-                  </SelectContent>
+                  <SelectTrigger accessibilityLabel="Inventory variant"><SelectValue placeholder="Choose variant" /></SelectTrigger>
+                  <SelectContent>{selectedProduct.variants.map((variant) => (
+                    <SelectItem key={variant.id} value={variant.id}>{variant.sku} · {variant.inventoryQuantity} · {variant.inventoryState}</SelectItem>
+                  ))}</SelectContent>
                 </Select>
               ) : <Text variant="body">No variants.</Text>}
               <Input accessibilityLabel="Inventory adjustment" value={inventoryAdjustment} onChangeText={setInventoryAdjustment} placeholder="+/- quantity" />
@@ -171,11 +156,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
               <Button
                 disabled={busy || !variantId || !Number.isInteger(Number(inventoryAdjustment)) || Number(inventoryAdjustment) === 0 || !inventoryReason.trim()}
                 onPress={() => variantId && void run(
-                  () => props.api.admin.products.adjustInventory(selectedProduct.id, {
-                    variantId,
-                    adjustment: Number(inventoryAdjustment),
-                    reason: inventoryReason,
-                  }),
+                  () => props.api.admin.products.adjustInventory(selectedProduct.id, { variantId, adjustment: Number(inventoryAdjustment), reason: inventoryReason }),
                   'Inventory adjustment persisted.',
                 )}
               >Apply adjustment</Button>
@@ -189,22 +170,17 @@ export function OperationsPanels(props: OperationsPanelsProps) {
         {promotionId ? (
           <Select value={promotionId} onValueChange={setPromotionId}>
             <SelectTrigger accessibilityLabel="Promotion campaign"><SelectValue placeholder="Choose promotion" /></SelectTrigger>
-            <SelectContent>
-              {props.promotions.map((promotion) => <SelectItem key={promotion.id} value={promotion.id}>{promotion.code} · {promotion.active ? 'active' : 'inactive'}</SelectItem>)}
-            </SelectContent>
+            <SelectContent>{props.promotions.map((promotion) => <SelectItem key={promotion.id} value={promotion.id}>{promotion.code} · {promotion.active ? 'active' : 'inactive'}</SelectItem>)}</SelectContent>
           </Select>
         ) : <Text variant="body">No promotions.</Text>}
         {selectedPromotion ? (
           <Box className="flex-row flex-wrap items-center gap-3">
             <Badge>{selectedPromotion.active ? 'active' : 'inactive'}</Badge>
             <Text variant="body">{selectedPromotion.title} · {selectedPromotion.startsAt} → {selectedPromotion.endsAt}</Text>
-            <Button
-              disabled={busy}
-              onPress={() => void run(
-                () => props.api.admin.promotions.update(selectedPromotion.id, { active: !selectedPromotion.active }),
-                selectedPromotion.active ? 'Promotion deactivated.' : 'Promotion activated.',
-              )}
-            >{selectedPromotion.active ? 'Deactivate' : 'Activate'}</Button>
+            <Button disabled={busy} onPress={() => void run(
+              () => props.api.admin.promotions.update(selectedPromotion.id, { active: !selectedPromotion.active }),
+              selectedPromotion.active ? 'Promotion deactivated.' : 'Promotion activated.',
+            )}>{selectedPromotion.active ? 'Deactivate' : 'Activate'}</Button>
           </Box>
         ) : null}
       </Card>
@@ -214,9 +190,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
         {orderId ? (
           <Select value={orderId} onValueChange={setOrderId}>
             <SelectTrigger accessibilityLabel="Operations order"><SelectValue placeholder="Choose order" /></SelectTrigger>
-            <SelectContent>
-              {props.orders.map((order) => <SelectItem key={order.id} value={order.id}>{order.number} · {order.paymentState} · {order.fulfillmentState}</SelectItem>)}
-            </SelectContent>
+            <SelectContent>{props.orders.map((order) => <SelectItem key={order.id} value={order.id}>{order.number} · {order.paymentState} · {order.fulfillmentState}</SelectItem>)}</SelectContent>
           </Select>
         ) : <Text variant="body">No orders.</Text>}
         {selectedOrder ? (
