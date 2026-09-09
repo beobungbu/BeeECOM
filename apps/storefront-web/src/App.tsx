@@ -229,18 +229,22 @@ export function App() {
 
               <Box className="gap-2">
                 <Text variant="body">Variant</Text>
-                <Select value={variantId} onValueChange={setVariantId}>
-                  <SelectTrigger accessibilityLabel="Product variant">
-                    <SelectValue placeholder="Choose a variant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selected.variants.map((variant) => (
-                      <SelectItem key={variant.id} value={variant.id}>
-                        {variant.title} · {formatMoney(variant.price)} · {variant.inventoryQuantity} left
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {variantId ? (
+                  <Select value={variantId} onValueChange={setVariantId}>
+                    <SelectTrigger accessibilityLabel="Product variant">
+                      <SelectValue placeholder="Choose a variant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selected.variants.map((variant) => (
+                        <SelectItem key={variant.id} value={variant.id}>
+                          {variant.title} · {formatMoney(variant.price)} · {variant.inventoryQuantity} left
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Text variant="body">No selectable variants.</Text>
+                )}
               </Box>
 
               {selectedVariant ? (
