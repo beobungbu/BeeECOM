@@ -8,9 +8,9 @@
   },
   "scripts": {
     "build": "pnpm -r --if-present build",
-    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck": "pnpm build && pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "check": "pnpm typecheck && pnpm test",
     "dev:api": "pnpm --filter @beeecom/api-worker dev",
     "seed:check": "pnpm --filter @beeecom/dummy-data test"
   },
