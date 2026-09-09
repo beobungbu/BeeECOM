@@ -9,6 +9,7 @@ import type {
   Product,
   Promotion,
   ReturnRequest,
+  Wishlist,
 } from '@beeecom/domain';
 
 export interface ApiMeta {
@@ -58,6 +59,10 @@ export interface CartAddLineInput {
 
 export interface CartApplyCouponInput {
   code: string;
+}
+
+export interface WishlistAddItemInput {
+  productId: string;
 }
 
 export interface CheckoutInput {
@@ -174,6 +179,9 @@ export interface ApiContractMap {
   'GET /api/v1/cart/:id': { response: Cart };
   'POST /api/v1/cart/:id/lines': { body: CartAddLineInput; response: Cart };
   'PATCH /api/v1/cart/:id/coupon': { body: CartApplyCouponInput; response: Cart };
+  'GET /api/v1/wishlist/:customerId': { response: Wishlist };
+  'POST /api/v1/wishlist/:customerId/items': { body: WishlistAddItemInput; response: Wishlist };
+  'DELETE /api/v1/wishlist/:customerId/items/:productId': { response: Wishlist };
   'POST /api/v1/checkout': { body: CheckoutInput; response: Order };
   'GET /api/v1/orders': { query: OrderQuery; response: Page<Order> };
   'GET /api/v1/orders/:id': { response: Order };
