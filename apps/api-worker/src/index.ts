@@ -3,16 +3,21 @@ import {
   isDemoScenarioName,
   type ApiFailure,
   type ApiSuccess,
+  type CartAddLineInput,
+  type CartApplyCouponInput,
   type CatalogQuery,
+  type ChatThreadQuery,
   type CheckoutInput,
   type DemoResetInput,
   type DemoResetResult,
+  type OrderQuery,
   type Page,
   type SendChatMessageInput,
 } from '@beeecom/contracts';
 import {
   calculateCartTotals,
   type Cart,
+  type CartLine,
   type ChatMessage,
   type ChatThread,
   type Customer,
@@ -199,6 +204,12 @@ async function getJsonRow<T>(env: Env, table: string, id: string): Promise<T | n
   return row ? parseJson<T>(row.data_json) : null;
 }
 
+async function persistCart(env: Env, cart: Cart): Promise<void> {
+  await env.DB.prepare('UPDATE carts SET customer_id = ?, data_json = ? WHERE id = ?')
+    .bind(cart.customerId, JSON.stringify(cart), cart.id)
+    .run();
+}
+
 async function listProducts(env: Env, url: URL): Promise<Page<Product>> {
   const rows = await env.DB.prepare('SELECT data_json FROM products').all<{ data_json: string }>();
   let items = rows.results.map((row) => parseJson<Product>(row.data_json));
@@ -261,6 +272,94 @@ async function promotions(env: Env): Promise<Promotion[]> {
   return rows.results.map((row) => parseJson<Promotion>(row.data_json));
 }
 
+async function addCartLine(env: Env, cartId: string, input: CartAddLineInput): Promise<Cart> {
+  if (!Number.isInteger(input.quantity) || input.quantity <= 0) throw new Error('INVALID_QUANTITY');
+  const cart = await getJsonRow<Cart>(env, 'carts', cartId);
+  if (!cart) throw new Error('CART_NOT_FOUND');
+
+  const rows = await env.DB.prepare('SELECT data_json FROM products').all<{ data_json: string }>();
+  let product: Product | undefined;
+  let productVariant: Product['variants'][number] | undefined;
+  for (const row of rows.results) {
+    const candidate = parseJson<Product>(row.data_json);
+    const variant = candidate.variants.find((item) => item.id === input.variantId);
+    if (variant) {
+      product = candidate;
+      productVariant = variant;
+      break;
+    }
+  }
+  if (!product || !productVariant) throw new Error('VARIANT_NOT_FOUND');
+
+  const existing = cart.lines.find((line) => line.variantId === input.variantId);
+  const nextQuantity = (existing?.quantity ?? 0) + input.quantity;
+  if (nextQuantity > productVariant.inventoryQuantity) throw new Error('INSUFFICIENT_STOCK');
+
+  const now = new Date().toISOString();
+  let lines: CartLine[];
+  if (existing) {
+    lines = cart.lines.map((line) => line.id === existing.id ? { ...line, quantity: nextQuantity } : line);
+  } else {
+    lines = [
+      ...cart.lines,
+      {
+        id: `cartline-${crypto.randomUUID()}`,
+        productId: product.id,
+        variantId: productVariant.id,
+        quantity: input.quantity,
+        unitPrice: productVariant.price,
+      },
+    ];
+  }
+
+  const updated: Cart = { ...cart, lines, updatedAt: now };
+  await persistCart(env, updated);
+  return updated;
+}
+
+async function applyCoupon(env: Env, cartId: string, input: CartApplyCouponInput): Promise<Cart> {
+  const cart = await getJsonRow<Cart>(env, 'carts', cartId);
+  if (!cart) throw new Error('CART_NOT_FOUND');
+
+  const code = input.code.trim().toUpperCase();
+  if (!code) {
+    const cleared: Cart = { ...cart, couponCode: undefined, updatedAt: new Date().toISOString() };
+    const normalized: Cart = {
+      id: cleared.id,
+      customerId: cleared.customerId,
+      lines: cleared.lines,
+      updatedAt: cleared.updatedAt,
+    };
+    await persistCart(env, normalized);
+    return normalized;
+  }
+
+  const promotion = await env.DB.prepare('SELECT data_json FROM promotions WHERE UPPER(code) = ? AND active = 1')
+    .bind(code)
+    .first<{ data_json: string }>();
+  if (!promotion) throw new Error('COUPON_INVALID');
+
+  const updated: Cart = { ...cart, couponCode: code, updatedAt: new Date().toISOString() };
+  await persistCart(env, updated);
+  return updated;
+}
+
+async function listOrders(env: Env, url: URL): Promise<Page<Order>> {
+  const query: OrderQuery = {
+    customerId: url.searchParams.get('customerId') ?? undefined,
+    page: Number(url.searchParams.get('page') ?? '1'),
+    pageSize: Number(url.searchParams.get('pageSize') ?? '20'),
+  };
+  const rows = await env.DB.prepare('SELECT data_json FROM orders ORDER BY placed_at DESC').all<{ data_json: string }>();
+  let items = rows.results.map((row) => parseJson<Order>(row.data_json));
+  if (query.customerId) items = items.filter((order) => order.customerId === query.customerId);
+  const page = Number.isFinite(query.page) ? Math.max(1, Math.floor(query.page ?? 1)) : 1;
+  const pageSize = Number.isFinite(query.pageSize) ? Math.min(100, Math.max(1, Math.floor(query.pageSize ?? 20))) : 20;
+  const total = items.length;
+  const start = (page - 1) * pageSize;
+  return { items: items.slice(start, start + pageSize), page, pageSize, total, hasNextPage: start + pageSize < total };
+}
+
 async function checkout(env: Env, input: CheckoutInput, scenario: string): Promise<Order> {
   const cart = await getJsonRow<Cart>(env, 'carts', input.cartId);
   if (!cart) throw new Error('CART_NOT_FOUND');
@@ -281,6 +380,7 @@ async function checkout(env: Env, input: CheckoutInput, scenario: string): Promi
     const product = productMap.get(line.productId);
     const productVariant = product?.variants.find((item) => item.id === line.variantId);
     if (!product || !productVariant) throw new Error('VARIANT_NOT_FOUND');
+    if (line.quantity > productVariant.inventoryQuantity) throw new Error('INSUFFICIENT_STOCK');
     return {
       id: `orderline-${crypto.randomUUID()}`,
       productId: product.id,
@@ -315,7 +415,35 @@ async function checkout(env: Env, input: CheckoutInput, scenario: string): Promi
   await env.DB.prepare('INSERT INTO orders (id, number, customer_id, placed_at, data_json) VALUES (?, ?, ?, ?, ?)')
     .bind(order.id, order.number, order.customerId, order.placedAt, JSON.stringify(order))
     .run();
+
+  if (!paymentFails) {
+    const emptied: Cart = {
+      id: cart.id,
+      customerId: cart.customerId,
+      lines: [],
+      updatedAt: placedAt,
+    };
+    await persistCart(env, emptied);
+  }
   return order;
+}
+
+async function listThreads(env: Env, url: URL): Promise<Page<ChatThread>> {
+  const query: ChatThreadQuery = {
+    customerId: url.searchParams.get('customerId') ?? undefined,
+    status: (url.searchParams.get('status') as ChatThreadQuery['status']) ?? undefined,
+    page: Number(url.searchParams.get('page') ?? '1'),
+    pageSize: Number(url.searchParams.get('pageSize') ?? '20'),
+  };
+  const rows = await env.DB.prepare('SELECT data_json FROM chat_threads ORDER BY updated_at DESC').all<{ data_json: string }>();
+  let items = rows.results.map((row) => parseJson<ChatThread>(row.data_json));
+  if (query.customerId) items = items.filter((thread) => thread.customerId === query.customerId);
+  if (query.status) items = items.filter((thread) => thread.status === query.status);
+  const page = Number.isFinite(query.page) ? Math.max(1, Math.floor(query.page ?? 1)) : 1;
+  const pageSize = Number.isFinite(query.pageSize) ? Math.min(100, Math.max(1, Math.floor(query.pageSize ?? 20))) : 20;
+  const total = items.length;
+  const start = (page - 1) * pageSize;
+  return { items: items.slice(start, start + pageSize), page, pageSize, total, hasNextPage: start + pageSize < total };
 }
 
 async function listMessages(env: Env, threadId: string): Promise<ChatMessage[]> {
@@ -418,6 +546,33 @@ async function handle(request: Request, env: Env): Promise<Response> {
     return cart ? ok(request, env, context, cart) : fail(request, env, context, 404, 'CART_NOT_FOUND', 'Cart was not found.');
   }
 
+  const cartLinesMatch = path.match(/^\/api\/v1\/cart\/([^/]+)\/lines$/);
+  if (request.method === 'POST' && cartLinesMatch) {
+    const cartId = decodeURIComponent(cartLinesMatch[1]!);
+    const body = await request.json().catch(() => null) as CartAddLineInput | null;
+    if (!body?.variantId || !body.quantity) return fail(request, env, context, 400, 'INVALID_CART_LINE', 'variantId and positive quantity are required.');
+    try {
+      return ok(request, env, context, await addCartLine(env, cartId, body), 201);
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'CART_UPDATE_FAILED';
+      const status = code.endsWith('_NOT_FOUND') ? 404 : 409;
+      return fail(request, env, context, status, code, 'Cart could not be updated.');
+    }
+  }
+
+  const cartCouponMatch = path.match(/^\/api\/v1\/cart\/([^/]+)\/coupon$/);
+  if (request.method === 'PATCH' && cartCouponMatch) {
+    const cartId = decodeURIComponent(cartCouponMatch[1]!);
+    const body = await request.json().catch(() => null) as CartApplyCouponInput | null;
+    if (body?.code === undefined) return fail(request, env, context, 400, 'INVALID_COUPON', 'code is required.');
+    try {
+      return ok(request, env, context, await applyCoupon(env, cartId, body));
+    } catch (error) {
+      const code = error instanceof Error ? error.message : 'COUPON_FAILED';
+      return fail(request, env, context, code === 'CART_NOT_FOUND' ? 404 : 409, code, 'Coupon could not be applied.');
+    }
+  }
+
   if (request.method === 'POST' && path === '/api/v1/checkout') {
     const body = await request.json().catch(() => null) as CheckoutInput | null;
     if (!body?.cartId || !body.addressId) return fail(request, env, context, 400, 'INVALID_CHECKOUT', 'cartId and addressId are required.');
@@ -427,6 +582,10 @@ async function handle(request: Request, env: Env): Promise<Response> {
       const code = error instanceof Error ? error.message : 'CHECKOUT_FAILED';
       return fail(request, env, context, code.endsWith('_NOT_FOUND') ? 404 : 409, code, 'Checkout could not be completed.');
     }
+  }
+
+  if (request.method === 'GET' && path === '/api/v1/orders') {
+    return ok(request, env, context, await listOrders(env, url));
   }
 
   const orderMatch = path.match(/^\/api\/v1\/orders\/([^/]+)$/);
@@ -445,6 +604,10 @@ async function handle(request: Request, env: Env): Promise<Response> {
     return ok(request, env, context, await promotions(env));
   }
 
+  if (request.method === 'GET' && path === '/api/v1/chat/threads') {
+    return ok(request, env, context, await listThreads(env, url));
+  }
+
   const threadMatch = path.match(/^\/api\/v1\/chat\/threads\/([^/]+)$/);
   if (request.method === 'GET' && threadMatch) {
     const thread = await getJsonRow<ChatThread>(env, 'chat_threads', decodeURIComponent(threadMatch[1]!));
@@ -461,7 +624,7 @@ async function handle(request: Request, env: Env): Promise<Response> {
   if (messagesMatch && request.method === 'POST') {
     const threadId = decodeURIComponent(messagesMatch[1]!);
     const body = await request.json().catch(() => null) as SendChatMessageInput | null;
-    if (!body?.threadId || !body.senderId || !body.senderRole || !body.clientMessageId) {
+    if (!body?.threadId || !body.senderId || !body.senderRole || !body.body || !body.clientMessageId) {
       return fail(request, env, context, 400, 'INVALID_MESSAGE', 'threadId, senderId, senderRole, body and clientMessageId are required.');
     }
     try {
