@@ -6,14 +6,18 @@ const STOREFRONT = 'http://127.0.0.1:5173';
 const ADMIN = 'http://127.0.0.1:5174';
 const RESET_TOKEN = 'qa-reset-token';
 
-async function resetHealthy() {
+async function resetScenario(scenario: string) {
   const api = await playwrightRequest.newContext({ baseURL: API });
   const response = await api.post('/api/v1/demo/reset', {
     headers: { 'x-demo-reset-token': RESET_TOKEN },
-    data: { scenario: 'healthy' },
+    data: { scenario },
   });
   expect(response.ok()).toBeTruthy();
   await api.dispose();
+}
+
+async function resetHealthy() {
+  await resetScenario('healthy');
 }
 
 test.describe('Worker + D1 integration', () => {
@@ -91,6 +95,100 @@ test.describe('Worker + D1 integration', () => {
   });
 });
 
+test.describe('Deterministic release scenario matrix', () => {
+  test('covers catalog, campaign, payment, operations and reconnect edge states', async ({ page }) => {
+    const api = await playwrightRequest.newContext({ baseURL: API });
+
+    async function reset(scenario: string) {
+      const response = await api.post('/api/v1/demo/reset', {
+        headers: { 'x-demo-reset-token': RESET_TOKEN },
+        data: { scenario },
+      });
+      expect(response.ok(), `reset ${scenario}`).toBeTruthy();
+    }
+
+    await reset('empty-catalog');
+    const emptyCatalogResponse = await api.get('/api/v1/catalog/products?pageSize=48');
+    const emptyCatalog = await emptyCatalogResponse.json() as { ok: true; data: { items: unknown[]; total: number } };
+    expect(emptyCatalog.data.total).toBe(0);
+    expect(emptyCatalog.data.items).toHaveLength(0);
+    await page.goto(STOREFRONT);
+    await expect(page.getByText('No products', { exact: true })).toBeVisible();
+    await page.goto('about:blank');
+
+    await reset('large-catalog');
+    const largeCatalogResponse = await api.get('/api/v1/catalog/products?pageSize=48&sort=featured');
+    const largeCatalog = await largeCatalogResponse.json() as {
+      ok: true;
+      data: {
+        items: Array<{ images: Array<{ url: string }> }>;
+        total: number;
+        hasNextPage: boolean;
+      };
+    };
+    expect(largeCatalog.data.total).toBe(80);
+    expect(largeCatalog.data.items).toHaveLength(48);
+    expect(largeCatalog.data.hasNextPage).toBe(true);
+    expect(largeCatalog.data.items.every((item) => item.images[0]?.url.startsWith('https://images.unsplash.com/photo-'))).toBe(true);
+
+    await reset('low-stock');
+    const lowStockResponse = await api.get('/api/v1/catalog/products?pageSize=48');
+    const lowStock = await lowStockResponse.json() as {
+      ok: true;
+      data: { items: Array<{ variants: Array<{ inventoryState: string }> }> };
+    };
+    expect(lowStock.data.items.some((product) => product.variants.some((variant) => variant.inventoryState === 'low-stock'))).toBe(true);
+
+    await reset('sale-campaign');
+    const promotionsResponse = await api.get('/api/v1/promotions');
+    const promotions = await promotionsResponse.json() as { ok: true; data: Array<{ code: string; active: boolean }> };
+    expect(promotions.data.some((promotion) => promotion.code === 'TAKE15' && promotion.active)).toBe(true);
+
+    await reset('payment-failed');
+    const customerResponse = await api.get('/api/v1/customers/cust-ava');
+    const customer = await customerResponse.json() as { ok: true; data: { addresses: Array<{ id: string; isDefault?: boolean }> } };
+    const address = customer.data.addresses.find((item) => item.isDefault) ?? customer.data.addresses[0];
+    expect(address).toBeTruthy();
+    const failedCheckoutResponse = await api.post('/api/v1/checkout', { data: { cartId: 'cart-ava', addressId: address!.id } });
+    const failedCheckout = await failedCheckoutResponse.json() as { ok: true; data: { paymentState: string } };
+    expect(failedCheckout.data.paymentState).toBe('failed');
+    const retainedCartResponse = await api.get('/api/v1/cart/cart-ava');
+    const retainedCart = await retainedCartResponse.json() as { ok: true; data: { lines: unknown[] } };
+    expect(retainedCart.data.lines.length).toBeGreaterThan(0);
+
+    await reset('delayed-shipment');
+    const delayedOrdersResponse = await api.get('/api/v1/orders?customerId=cust-ava&pageSize=20');
+    const delayedOrders = await delayedOrdersResponse.json() as { ok: true; data: { items: Array<{ fulfillmentState: string }> } };
+    expect(delayedOrders.data.items[0]?.fulfillmentState).toBe('processing');
+
+    await reset('return-approved');
+    const returnsResponse = await api.get('/api/v1/admin/returns');
+    const returns = await returnsResponse.json() as { ok: true; data: Array<{ state: string }> };
+    expect(returns.data.some((item) => item.state === 'approved')).toBe(true);
+
+    await reset('vip-customer');
+    const vipCartResponse = await api.get('/api/v1/cart/cart-ava');
+    const vipCart = await vipCartResponse.json() as { ok: true; data: { customerId: string } };
+    expect(vipCart.data.customerId).toBe('cust-minh');
+    const vipCustomerResponse = await api.get('/api/v1/customers/cust-minh');
+    const vipCustomer = await vipCustomerResponse.json() as { ok: true; data: { tier: string } };
+    expect(vipCustomer.data.tier).toBe('vip');
+
+    await reset('unread-chat');
+    const unreadThreadsResponse = await api.get('/api/v1/chat/threads?customerId=cust-ava&pageSize=20');
+    const unreadThreads = await unreadThreadsResponse.json() as { ok: true; data: { items: Array<{ unreadByCustomer: number }> } };
+    expect(unreadThreads.data.items[0]?.unreadByCustomer).toBe(2);
+
+    await reset('chat-reconnect');
+    const reconnectMessagesResponse = await api.get('/api/v1/chat/threads/thread-ava-1/messages');
+    const reconnectMessages = await reconnectMessagesResponse.json() as { ok: true; data: Array<{ body: string }> };
+    expect(reconnectMessages.data.some((message) => message.body.includes('before the client reconnects'))).toBe(true);
+
+    await reset('healthy');
+    await api.dispose();
+  });
+});
+
 test.describe('Golden customer → Admin → support journey', () => {
   test.beforeEach(async () => {
     await resetHealthy();
@@ -140,9 +238,31 @@ test.describe('Golden customer → Admin → support journey', () => {
   });
 });
 
-test.describe('Responsive and accessibility smoke', () => {
+test.describe('Keyboard, responsive and accessibility release smoke', () => {
   test.beforeEach(async () => {
     await resetHealthy();
+  });
+
+  test('storefront keyboard order reaches primary controls and activates the featured experience', async ({ page }) => {
+    await page.goto(STOREFRONT);
+    await expect(page.getByText('Catalog')).toBeVisible();
+
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Refresh server state' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Close PDP' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Shop featured Cloud Tee' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByLabel('Product variant')).toBeVisible();
+  });
+
+  test('Admin starts keyboard traversal at the canonical refresh control', async ({ page }) => {
+    await page.goto(ADMIN);
+    await expect(page.getByText('BeeECOM Admin')).toBeVisible();
+
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Refresh canonical state' })).toBeFocused();
   });
 
   test('storefront stays within a 360px phone viewport and has no serious/critical axe violations', async ({ page }) => {
