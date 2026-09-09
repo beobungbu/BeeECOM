@@ -30,19 +30,19 @@
 | P01 | npm RC distribution / external package consumption | 🚨 MISMATCH | `PKG TYPE BUILD-WEB BUILD-IOS BUILD-ANDROID DOC LLM` | RC works, but generated docs/LLM still say unpublished | [#543](https://github.com/beobungbu/BeeUI/issues/543) |
 | P02 | React / RN / RN Web compatibility | 🟡 PARTIAL | `TYPE BUILD-WEB BUILD-IOS BUILD-ANDROID` | Runtime parity + dependency drift | — |
 | P03 | Expo SDK 57 consumer compatibility | 🚨 MISMATCH | `PKG BUILD-WEB BUILD-IOS BUILD-ANDROID` | Canonical `@expo/metro-runtime` peer pin drifts | [#544](https://github.com/beobungbu/BeeUI/issues/544) |
-| P04 | Vite + React Native Web integration | ✅ VERIFIED | `SOURCE DOC TYPE BUILD-WEB WEB-RUNTIME` | Recheck on toolchain bump | — |
-| P05 | Application-root provider runtime | 🔧 CONSUMER FIXED | `SOURCE DOC TYPE` + all builds | Keep one root provider; add overlay/Toast runtime evidence | — |
+| P04 | Vite + React Native Web integration | ✅ VERIFIED | `SOURCE DOC TYPE BUILD-WEB WEB-RUNTIME` | Recheck pinned `vite-plugin-rnw@0.0.12` before a Vite 9 bump; Vite 8 currently emits the known future-deprecation warning | — |
+| P05 | Application-root provider runtime | 🔧 CONSUMER FIXED | `SOURCE DOC TYPE` + all builds + Toast `WEB-RUNTIME` | Keep one root provider; add modal/anchored-overlay/native provider runtime evidence | — |
 | P06 | Safe-area ownership | 🚨 MISMATCH | `SOURCE DOC BUILD-IOS BUILD-ANDROID` | Native notch/home-indicator runtime; Web docs disagree | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
 | P07 | Global System / Light / Dark preference | 🚨 MISMATCH | `TYPE` + all builds + `WEB-RUNTIME VISUAL DOC LLM SOURCE` | Native OS-switch runtime; branded System semantics | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
 | P08 | Scoped theme / BeeThemeScope | ⬜ NOT CHECKED | — | Add scoped brand/theme consumer fixture | — |
 | P09 | Semantic tokens / theme CSS | 🟡 PARTIAL | `PKG TYPE SOURCE` + all builds | Full color/type/spacing/motion/runtime-override coverage | — |
 | P10 | Responsive / layout / breakpoints | 🟡 PARTIAL | all builds + partial `RESP` | Formal viewport, zoom, landscape, tablet, large-text matrix | — |
-| P11 | Accessibility system | 🟡 PARTIAL | partial `A11Y WEB-RUNTIME TYPE` | Per-component keyboard/name/state + native assistive tech | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
-| P12 | Forms / selection | 🟡 PARTIAL | Input + Select: `TYPE SOURCE DOC` + all builds | Validation composition, keyboard, focus, native runtime | — |
-| P13 | Anchored overlays | 🟡 PARTIAL | Select path builds all targets | Geometry/dismiss/typeahead/native runtime; other families unused | — |
+| P11 | Accessibility system | 🟡 PARTIAL | `A11Y WEB-RUNTIME TYPE` now includes Select keyboard/focus and Toast live region | Per-component names/states + native assistive tech; Table bridge still mismatches | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| P12 | Forms / selection | 🟡 PARTIAL | Input + Select: `TYPE SOURCE DOC` + all builds; Select `WEB-RUNTIME` keyboard/typeahead/focus | Validation composition + native Input/Select runtime | — |
+| P13 | Anchored overlays | 🟡 PARTIAL | Select: all builds + `WEB-RUNTIME` keyboard dismissal/typeahead/collision containment | Native runtime; Popover/Menu/Tooltip still unused | — |
 | P14 | Modal overlays / Sheet | ⬜ NOT CHECKED | — | Dialog/AlertDialog/Sheet realistic flows | — |
-| P15 | Data display / Table | 🚨 MISMATCH | `TYPE BUILD-WEB SOURCE DOC` | Web accessibility prop bridge + runtime a11y | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
-| P16 | Feedback / status / loading | 🟡 PARTIAL | Badge/Card/Text used on all builds | Toast/Spinner/Skeleton/StateMessage | — |
+| P15 | Data display / Table | 🚨 MISMATCH | `TYPE BUILD-WEB SOURCE DOC WEB-RUNTIME`; real HTML table/header/body semantics pass | Web accessibility prop bridge + stacked/sort/selection/native runtime | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| P16 | Feedback / status / loading | 🟡 PARTIAL | Badge/Card/Text all builds; Toast `TYPE BUILD-WEB BUILD-IOS BUILD-ANDROID WEB-RUNTIME A11Y` | Toast FIFO/action/persistent/native runtime; Spinner/Skeleton/StateMessage | — |
 | P17 | Date/time | ⬜ NOT CHECKED | — | Calendar + native picker flows | — |
 | P18 | Navigation/content primitives | ⬜ NOT CHECKED | — | Tabs/Breadcrumb/Pagination/List/Stepper/Timeline/Link | — |
 | P19 | Source-ownership CLI / Registry | ⬜ NOT CHECKED | — | Independent `beeui add`, doctor, diff, update | — |
@@ -100,7 +100,7 @@
 | 28 | `radio` | Radio, RadioGroup | No | ⬜ | arrows/group semantics/native parity | — |
 | 29 | `switch` | Switch | No | ⬜ | state/native semantics/disabled | — |
 | 30 | `segmented-control` | SegmentedControl family | No | ⬜ | keyboard/native semantics/overflow | — |
-| 31 | `select` | Select family | Yes | 🟡 | `TYPE SOURCE DOC`, all builds; keyboard/geometry/native runtime | — |
+| 31 | `select` | Select family | Yes | 🟡 | `TYPE SOURCE DOC`, all builds + `WEB-RUNTIME`: keyboard/typeahead/Enter/Escape/focus restore + constrained collision; native runtime remains | — |
 
 ## Overlay / modal / transient — 7
 
@@ -112,7 +112,7 @@
 | 35 | `dropdown-menu` | DropdownMenu family | No | ⬜ | keyboard/typeahead/menu state | — |
 | 36 | `sheet` | Sheet family | No | ⬜ | native gesture providers/snap/dismiss/keyboard/a11y | — |
 | 37 | `tooltip` | Tooltip family | No | ⬜ | hover/focus/long-press/timing/a11y | — |
-| 38 | `toast` | useToast | No | ⬜ | provider scope/queue/action/announcements/safe area | — |
+| 38 | `toast` | useToast | Yes | 🟡 | all builds + `WEB-RUNTIME A11Y`: provider-scoped success Toast and `aria-live`; FIFO/action/persistent/safe-area/native remain | — |
 
 ## Data display / status / content — 19
 
@@ -133,7 +133,7 @@
 | 51 | `spinner` | Spinner | No | ⬜ | busy/status/reduced motion | — |
 | 52 | `stat` | Stat family | No | ⬜ | numeric typography/long labels | — |
 | 53 | `state-message` | EmptyState, ErrorState | No | ⬜ | actions/announcements | — |
-| 54 | `table` | Table family | Yes | 🚨 | `TYPE BUILD-WEB SOURCE DOC`; accessibility bridge/runtime | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| 54 | `table` | Table family | Yes | 🚨 | `TYPE BUILD-WEB SOURCE DOC WEB-RUNTIME`: real table/thead/tbody/column-header semantics pass; accessibility-label bridge still mismatches | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
 | 55 | `text` | Text | Yes | 🟡 | all builds; dynamic type/zoom/RTL/long strings | — |
 | 56 | `timeline` | Timeline family | No | ⬜ | semantics/wrapping | — |
 | 57 | `visually-hidden` | VisuallyHidden | No | ⬜ | browser + VoiceOver/TalkBack | — |
@@ -164,7 +164,7 @@
 | Contract | Status | Evidence | To reach full verification | Issue |
 | --- | --- | --- | --- | --- |
 | Exactly one root BeeUIProvider | 🔧 CONSUMER FIXED | source/docs audit + all builds | Add regression assertion | — |
-| Provider encloses all BeeUI consumers | 🔧 CONSUMER FIXED | source audit + all builds | Overlay/Toast runtime fixture | — |
+| Provider encloses all BeeUI consumers | 🔧 CONSUMER FIXED | source audit + all builds + Toast provider `WEB-RUNTIME` | Modal/anchored/native runtime | — |
 | Native top inset owner | 🟡 | composition + builds | notched iOS/Android runtime | — |
 | Native bottom inset owner | 🟡 | composition + builds | home-indicator/navigation-bar runtime | — |
 | Web root SafeArea policy | 🚨 | current docs contradict | align docs + starter + LLM guidance | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
@@ -187,7 +187,7 @@
 | Contract | Status | Evidence | Issue |
 | --- | --- | --- | --- |
 | npm RC resolves | ✅ runtime / 🚨 guidance | clean consumer install/build | [#543](https://github.com/beobungbu/BeeUI/issues/543) |
-| RNW Vite plugin | ✅ | config matches canonical example + build/runtime | — |
+| RNW Vite plugin | ✅ | config matches canonical example + Vite 8 build/runtime; `vite-plugin-rnw@0.0.12` emits a Vite-9 future-deprecation warning, so reverify before bumping | — |
 | Tailwind Vite plugin | ✅ | build/runtime | — |
 | Uniwind Vite plugin | ✅ | build/theme runtime | — |
 | theme.css import | ✅ | package CSS consumed | — |
@@ -209,22 +209,35 @@
 | Contract | Status | Evidence | Next |
 | --- | --- | --- | --- |
 | controlled value/onValueChange | ✅ | `TYPE` + all builds | — |
-| trigger name | 🟡 | accessibilityLabel used | browser accessibility-tree + native runtime |
-| open/select/close | 🟡 | app composition + builds | explicit browser/native interaction |
-| keyboard/typeahead/Escape | ⬜ | — | Playwright keyboard suite |
-| flip/shift/collision | ⬜ | — | constrained viewport suite |
-| provider/portal nesting | 🟡 | root provider corrected | nested overlay/modal runtime |
+| trigger name | ✅ Web | Playwright `getByLabel` resolves the combobox trigger | native runtime |
+| open/select/close | ✅ Web | ArrowDown opens, typeahead + Enter selects/closes, Escape closes | native runtime |
+| keyboard/typeahead/Escape | ✅ Web | Chromium package-consumer test, PR #30 run #94 | native runtime |
+| focus restore after dismiss | ✅ Web | trigger focused again after Escape | native runtime |
+| flip/shift/collision | ✅ Web | listbox remains inside 390×300 constrained viewport | native runtime + more placements |
+| provider/portal nesting | 🟡 | root provider corrected + ordinary Select portal runtime | nested overlay/modal runtime |
 
 ## Table
 
 | Contract | Status | Evidence | Next | Issue |
 | --- | --- | --- | --- | --- |
-| real Web table semantics | 🟡 | source + production build | DOM/accessibility assertions | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| real Web table semantics | ✅ Web | Chromium asserts table + thead + tbody + five `th[scope=col]` + rows/cells | stacked/sort/selection + native runtime | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
 | RN accessibilityLabel → Web aria-label | 🚨 | source shows plain HTML path without bridge | upstream fix + consumer regression | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
-| scroll layout | 🟡 | realistic admin inventory | responsive browser assertion | — |
+| scroll layout | 🟡 | realistic Admin inventory + Web semantic runtime | responsive overflow assertion | — |
 | stacked layout | ⬜ | — | compact-width fixture | — |
 | sort contract | ⬜ | — | caller state + aria-sort/native semantics | — |
 | selection contract | ⬜ | — | caller state + a11y | — |
+
+## Toast
+
+| Contract | Status | Evidence | Next |
+| --- | --- | --- | --- |
+| provider-scoped `useToast()` runtime | ✅ Web | real Admin mutation invokes Toast under the single root provider | native runtime |
+| success Toast content | ✅ Web | title + mutation description rendered in Toast live region | variant/state expansion |
+| live announcement surface | ✅ Web | Chromium asserts visible `[aria-live]` containing the Toast title/description | native announcement evidence |
+| destructive/error Toast | 🟡 | app path wired and type/build verified | trigger a deterministic failing mutation and assert runtime semantics |
+| FIFO / max-visible queue | ⬜ | — | burst multiple toasts and assert documented queue/order |
+| persistent + action | ⬜ | — | real retry/undo action flow |
+| safe-area placement | ⬜ | — | native notched-device/emulator runtime |
 
 ---
 
