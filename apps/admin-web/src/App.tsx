@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
   Text,
+  useToast,
 } from '@beemvp/beeui-ui';
 import * as React from 'react';
 
@@ -34,6 +35,7 @@ function appendMessage(messages: ChatMessage[], message: ChatMessage): ChatMessa
 }
 
 export function App() {
+  const toast = useToast();
   const [products, setProducts] = React.useState<Product[]>([]);
   const [promotions, setPromotions] = React.useState<Promotion[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
@@ -114,8 +116,21 @@ export function App() {
   const showNotice = React.useCallback((message: string) => {
     setError(null);
     setNotice(message);
-  }, []);
-  const showError = React.useCallback((message: string) => setError(message), []);
+    toast.show({
+      title: 'Admin operation complete',
+      description: message,
+      variant: 'success',
+    });
+  }, [toast]);
+
+  const showError = React.useCallback((message: string) => {
+    setError(message);
+    toast.show({
+      title: 'Admin operation failed',
+      description: message,
+      variant: 'destructive',
+    });
+  }, [toast]);
 
   async function changeThread(nextThreadId: string | undefined) {
     setThreadId(nextThreadId);
@@ -123,7 +138,7 @@ export function App() {
     setBusy(true);
     setError(null);
     try { await loadMessages(nextThreadId); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to load support history.'); }
+    catch (cause) { showError(cause instanceof Error ? cause.message : 'Unable to load support history.'); }
     finally { setBusy(false); }
   }
 
@@ -142,9 +157,9 @@ export function App() {
       });
       setMessages((current) => appendMessage(current, message));
       setAgentDraft('');
-      setNotice('Reply persisted to D1 and published to connected customer clients.');
+      showNotice('Reply persisted to D1 and published to connected customer clients.');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to persist support reply.');
+      showError(cause instanceof Error ? cause.message : 'Unable to persist support reply.');
     } finally { setBusy(false); }
   }
 
