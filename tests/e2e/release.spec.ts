@@ -122,7 +122,7 @@ test.describe('Golden customer → Admin → support journey', () => {
     const latestOrderNumber = payload.data.items[0]?.number;
     expect(latestOrderNumber).toBeTruthy();
 
-    await adminPage.getByRole('button', { name: 'Refresh server state' }).click();
+    await adminPage.getByRole('button', { name: 'Refresh canonical state' }).click();
     await expect(adminPage.getByText(latestOrderNumber!, { exact: true })).toBeVisible();
 
     const customerMessage = `Realtime customer QA ${Date.now()}`;
