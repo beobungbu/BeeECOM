@@ -28,3 +28,12 @@ jobs:
         run: pnpm --filter @beeecom/mobile bundle:ios
       - name: Bundle Expo Android
         run: pnpm --filter @beeecom/mobile bundle:android
+      - name: Validate Cloudflare API deployment bundle
+        run: |
+          node scripts/render-cloudflare-api-config.mjs
+          printf 'DEMO_RESET_TOKEN=ci-dry-run-only\n' > apps/api-worker/secrets.generated.env
+          pnpm --filter @beeecom/api-worker exec wrangler deploy --dry-run --config wrangler.generated.json --secrets-file secrets.generated.env
+      - name: Validate Cloudflare Storefront deployment bundle
+        run: pnpm --filter @beeecom/api-worker exec wrangler deploy --dry-run --config ../storefront-web/wrangler.jsonc
+      - name: Validate Cloudflare Admin deployment bundle
+        run: pnpm --filter @beeecom/api-worker exec wrangler deploy --dry-run --config ../admin-web/wrangler.jsonc
