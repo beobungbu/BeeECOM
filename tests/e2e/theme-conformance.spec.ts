@@ -18,7 +18,12 @@ async function attachScreenshot(page: Page, testInfo: TestInfo, name: string) {
 }
 
 async function clearThemePreference(page: Page) {
-  await page.addInitScript((key) => window.localStorage.removeItem(key), storageKey);
+  await page.addInitScript((key) => {
+    const marker = '__beeecomThemeConformanceInitialized';
+    if (window.sessionStorage.getItem(marker) === '1') return;
+    window.localStorage.removeItem(key);
+    window.sessionStorage.setItem(marker, '1');
+  }, storageKey);
 }
 
 test.describe('BeeUI theme preference conformance', () => {
