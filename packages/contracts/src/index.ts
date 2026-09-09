@@ -78,6 +78,16 @@ export interface ChatThreadQuery {
   pageSize?: number | undefined;
 }
 
+export interface CreateChatThreadInput {
+  customerId: string;
+  subject: string;
+  assignedAgentId?: string | undefined;
+}
+
+export interface MarkChatReadInput {
+  readerRole: 'customer' | 'support-agent';
+}
+
 export interface CreateReviewInput {
   productId: string;
   customerId: string;
@@ -169,7 +179,9 @@ export interface ApiContractMap {
   'GET /api/v1/promotions': { response: Promotion[] };
   'POST /api/v1/returns': { body: CreateReturnInput; response: ReturnRequest };
   'GET /api/v1/chat/threads': { query: ChatThreadQuery; response: Page<ChatThread> };
+  'POST /api/v1/chat/threads': { body: CreateChatThreadInput; response: ChatThread };
   'GET /api/v1/chat/threads/:id': { response: ChatThread };
+  'PATCH /api/v1/chat/threads/:id/read': { body: MarkChatReadInput; response: ChatThread };
   'GET /api/v1/chat/threads/:id/messages': { response: ChatMessage[] };
   'POST /api/v1/chat/threads/:id/messages': { body: SendChatMessageInput; response: ChatMessage };
   'GET /api/v1/demo/personas': { response: DemoPersona[] };
