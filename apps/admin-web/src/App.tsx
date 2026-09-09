@@ -1,4 +1,4 @@
-import { createBeeEcomClient } from '@beeecom/api-client';
+import { createBeeEcomClient, type ChatRealtimeStatus } from '@beeecom/api-client';
 import { formatMoney } from '@beeecom/app-ui';
 import type { ChatMessage, ChatThread, Order, Product, Promotion } from '@beeecom/domain';
 import {
@@ -28,6 +28,10 @@ const api = createBeeEcomClient({
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8787',
 });
 
+function appendMessage(messages: ChatMessage[], message: ChatMessage): ChatMessage[] {
+  return messages.some((item) => item.id === message.id) ? messages : [...messages, message];
+}
+
 export function App() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [promotions, setPromotions] = React.useState<Promotion[]>([]);
@@ -35,6 +39,7 @@ export function App() {
   const [threads, setThreads] = React.useState<ChatThread[]>([]);
   const [threadId, setThreadId] = React.useState<string | undefined>();
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const [chatStatus, setChatStatus] = React.useState<ChatRealtimeStatus>('closed');
   const [agentDraft, setAgentDraft] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
@@ -74,6 +79,33 @@ export function App() {
     void refresh();
   }, [refresh]);
 
+  React.useEffect(() => {
+    if (!threadId) {
+      setChatStatus('closed');
+      return undefined;
+    }
+
+    const activeThreadId = threadId;
+    const subscription = api.chat.subscribe(activeThreadId, {
+      onEvent(event) {
+        setMessages((current) => appendMessage(current, event.message));
+        if (event.message.senderRole === 'customer') {
+          setThreads((current) => current.map((thread) => (
+            thread.id === activeThreadId
+              ? { ...thread, unreadByAgent: thread.unreadByAgent + 1, updatedAt: event.message.sentAt }
+              : thread
+          )));
+        }
+      },
+      onStatus: setChatStatus,
+      onResync: () => loadMessages(activeThreadId),
+      onError(cause) {
+        console.warn('Support inbox realtime transport error', cause);
+      },
+    });
+    return () => subscription.close();
+  }, [loadMessages, threadId]);
+
   async function changeThread(nextThreadId: string | undefined) {
     setThreadId(nextThreadId);
     if (!nextThreadId) {
@@ -98,16 +130,16 @@ export function App() {
     setError(null);
     setNotice(null);
     try {
-      await api.chat.sendMessage(threadId, {
+      const message = await api.chat.sendMessage(threadId, {
         threadId,
         senderId: 'agent-sam',
         senderRole: 'support-agent',
         body,
         clientMessageId: `web-agent-${Date.now()}`,
       });
-      await loadMessages(threadId);
+      setMessages((current) => appendMessage(current, message));
       setAgentDraft('');
-      setNotice('Reply persisted. The customer storefront will see it after refresh.');
+      setNotice('Reply persisted to D1 and published to connected customer clients.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to persist support reply.');
     } finally {
@@ -219,8 +251,11 @@ export function App() {
           {!loading ? (
             <Card className="gap-4 p-4 md:p-6">
               <Box className="gap-1">
-                <Text variant="title">Support inbox</Text>
-                <Text variant="body">History is read from D1; duplicate sends are guarded by `clientMessageId`.</Text>
+                <Box className="flex-row flex-wrap items-center gap-2">
+                  <Text variant="title">Support inbox</Text>
+                  <Badge>{chatStatus}</Badge>
+                </Box>
+                <Text variant="body">D1 history is canonical; Durable Objects fan out persisted messages and reconnect resyncs history.</Text>
               </Box>
               {threadId ? (
                 <>
