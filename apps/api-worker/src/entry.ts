@@ -10,6 +10,7 @@ import {
   proxyChatWebSocket,
   type DurableObjectNamespaceLike,
 } from './realtime';
+import { handleWishlistLifecycle } from './wishlist-lifecycle';
 
 export { ChatRoom };
 
@@ -75,6 +76,9 @@ export default {
 
     const catalogResponse = await handleCatalogExtra(request, env);
     if (catalogResponse) return catalogResponse;
+
+    const wishlistResponse = await handleWishlistLifecycle(request, env);
+    if (wishlistResponse) return wishlistResponse;
 
     const lifecycleResponse = await handleChatLifecycle(request, env);
     if (lifecycleResponse) return lifecycleResponse;
