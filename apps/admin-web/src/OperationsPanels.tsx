@@ -2,10 +2,25 @@ import type { BeeEcomClient } from '@beeecom/api-client';
 import { formatMoney } from '@beeecom/app-ui';
 import type { Customer, Order, Product, Promotion, ReturnRequest, Review } from '@beeecom/domain';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Badge,
   Box,
   Button,
   Card,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+  DialogTrigger,
   Input,
   Select,
   SelectContent,
@@ -201,11 +216,43 @@ export function OperationsPanels(props: OperationsPanelsProps) {
               <Text variant="body">{formatMoney(selectedOrder.total)} · customer {selectedOrder.customerId}</Text>
             </Box>
             <Box className="flex-row flex-wrap gap-2">
+              <Dialog>
+                <DialogTrigger variant="outline">View order details</DialogTrigger>
+                <DialogContent>
+                  <DialogTitle>Order {selectedOrder.number} details</DialogTitle>
+                  <DialogDescription>Inspect the selected order without changing its persisted lifecycle state.</DialogDescription>
+                  <Box className="gap-2">
+                    <Text variant="body">Customer: {selectedOrder.customerId}</Text>
+                    <Text variant="body">Payment: {selectedOrder.paymentState}</Text>
+                    <Text variant="body">Fulfillment: {selectedOrder.fulfillmentState}</Text>
+                    <Text variant="body">Total: {formatMoney(selectedOrder.total)}</Text>
+                    <Text variant="body">Lines: {selectedOrder.lines.length}</Text>
+                  </Box>
+                  <DialogFooter><DialogClose>Close details</DialogClose></DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               <Button disabled={busy || !canProcess} onPress={() => void run(() => props.api.admin.orders.transition(selectedOrder.id, { action: 'process' }), 'Order moved to processing.')}>Process</Button>
               <Button disabled={busy || !canShip} onPress={() => void run(() => props.api.admin.orders.transition(selectedOrder.id, { action: 'ship' }), 'Order marked shipped.')}>Ship</Button>
               <Button disabled={busy || !canDeliver} onPress={() => void run(() => props.api.admin.orders.transition(selectedOrder.id, { action: 'deliver' }), 'Order delivered.')}>Deliver</Button>
               <Button variant="outline" disabled={busy || !canCancel} onPress={() => void run(() => props.api.admin.orders.transition(selectedOrder.id, { action: 'cancel' }), 'Order cancelled.')}>Cancel</Button>
-              <Button variant="outline" disabled={busy || !canRefund} onPress={() => void run(() => props.api.admin.orders.transition(selectedOrder.id, { action: 'refund' }), 'Order payment refunded.')}>Refund</Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger variant="outline" disabled={busy || !canRefund}>Refund</AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogTitle>Refund order {selectedOrder.number}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This changes the persisted payment state to refunded. The confirmation must be explicit; backdrop and Escape dismissal are intentionally disabled.
+                  </AlertDialogDescription>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep payment</AlertDialogCancel>
+                    <AlertDialogAction disabled={busy} onPress={() => void run(
+                      () => props.api.admin.orders.transition(selectedOrder.id, { action: 'refund' }),
+                      'Order payment refunded.',
+                    )}>Refund order</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </Box>
           </Box>
         ) : null}
