@@ -17,6 +17,7 @@ import type {
 } from '@beeecom/contracts';
 import type {
   Cart,
+  Category,
   ChatMessage,
   ChatThread,
   Customer,
@@ -181,6 +182,9 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
 
   return {
     catalog: {
+      listCategories() {
+        return request<Category[]>('/api/v1/catalog/categories');
+      },
       listProducts(query: CatalogQuery = {}) {
         return request<Page<Product>>(`/api/v1/catalog/products${encodeCatalogQuery(query)}`);
       },
