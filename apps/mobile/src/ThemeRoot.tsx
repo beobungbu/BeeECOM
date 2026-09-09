@@ -5,8 +5,8 @@ import {
   ThemePreferenceControl,
   type ThemePreference,
 } from '@beeecom/app-ui';
+import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
-import { View } from 'react-native';
 import App from '../App';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
@@ -42,9 +42,15 @@ export default function ThemeRoot() {
   }, []);
 
   return (
-    <View style={{ flex: 1 }}>
-      <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
-      <App />
-    </View>
+    <BeeUIProvider>
+      <App
+        themeControl={(
+          <ThemePreferenceControl
+            preference={preference}
+            onPreferenceChange={changePreference}
+          />
+        )}
+      />
+    </BeeUIProvider>
   );
 }
