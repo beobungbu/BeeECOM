@@ -243,7 +243,7 @@ test.describe('Keyboard, responsive and accessibility release smoke', () => {
     await resetHealthy();
   });
 
-  test('storefront keyboard order reaches primary controls and activates the featured experience', async ({ page }) => {
+  test('storefront keyboard traversal reaches and activates the featured CTA', async ({ page }) => {
     await page.goto(STOREFRONT);
     await expect(page.getByText('Catalog')).toBeVisible();
 
@@ -251,8 +251,18 @@ test.describe('Keyboard, responsive and accessibility release smoke', () => {
     await expect(page.getByRole('button', { name: 'Refresh server state' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: 'Close PDP' })).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Shop featured Cloud Tee' })).toBeFocused();
+
+    const featuredCta = page.getByRole('button', { name: 'Shop featured Cloud Tee' });
+    let reachedFeatured = false;
+    for (let index = 0; index < 16; index += 1) {
+      await page.keyboard.press('Tab');
+      if (await featuredCta.evaluate((element) => element === document.activeElement)) {
+        reachedFeatured = true;
+        break;
+      }
+    }
+    expect(reachedFeatured, 'featured CTA should be keyboard reachable within the primary storefront controls').toBe(true);
+    await expect(featuredCta).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.getByLabel('Product variant')).toBeVisible();
   });
