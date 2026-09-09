@@ -59,6 +59,7 @@ function StatefulScopedContent({ appearance }: { appearance: 'light' | 'dark' })
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger>Open scoped Popover</PopoverTrigger>
             <PopoverContent
+              closeOnOutsidePress={false}
               outsidePressTestID="scoped-popover-outside"
               placement="bottom"
               align="start"
