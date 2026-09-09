@@ -12,10 +12,17 @@
     "test": "pnpm -r --if-present test",
     "check": "pnpm typecheck && pnpm test",
     "dev:api": "pnpm --filter @beeecom/api-worker dev",
+    "dev:storefront": "pnpm build && pnpm --filter @beeecom/storefront-web dev",
+    "dev:admin": "pnpm build && pnpm --filter @beeecom/admin-web dev",
+    "dev:mobile": "pnpm build && pnpm --filter @beeecom/mobile start",
+    "ios": "pnpm build && pnpm --filter @beeecom/mobile ios",
+    "android": "pnpm build && pnpm --filter @beeecom/mobile android",
     "seed:check": "pnpm --filter @beeecom/dummy-data test"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "typescript": "~5.9.2",
     "vitest": "^3.2.4"
   }
