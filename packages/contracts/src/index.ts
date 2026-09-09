@@ -42,12 +42,12 @@ export interface Page<T> {
 }
 
 export interface CatalogQuery {
-  q?: string;
-  category?: string;
-  tags?: string[];
-  sort?: 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest';
-  page?: number;
-  pageSize?: number;
+  q?: string | undefined;
+  category?: string | undefined;
+  tags?: string[] | undefined;
+  sort?: 'featured' | 'price-asc' | 'price-desc' | 'rating' | 'newest' | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
 }
 
 export interface CartAddLineInput {
