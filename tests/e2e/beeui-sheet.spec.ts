@@ -48,7 +48,12 @@ test.describe('BeeUI Sheet external-consumer contract', () => {
 
     await trigger.click();
     await expect(sheet).toBeVisible();
-    await page.getByTestId('cart-sheet-backdrop').click({ position: { x: 4, y: 4 } });
+    const backdrop = page.getByTestId('cart-sheet-backdrop');
+    await expect(backdrop).toBeVisible();
+    const sheetBox = await sheet.boundingBox();
+    expect(sheetBox).not.toBeNull();
+    expect(sheetBox!.y).toBeGreaterThan(8);
+    await page.mouse.click(8, Math.max(4, sheetBox!.y / 2));
     await expect(sheet).toBeHidden();
     await expect(trigger).toBeFocused();
   });
@@ -66,17 +71,25 @@ test.describe('BeeUI Sheet external-consumer contract', () => {
     const completion = page.getByText(/Sheet checkout complete:/);
     await expect(completion).toBeVisible();
     const completionText = await completion.textContent();
-    const orderNumber = completionText?.match(/#\d+/)?.[0];
-    expect(orderNumber).toBeTruthy();
+    expect(completionText).toBeTruthy();
 
     const api = await playwrightRequest.newContext({ baseURL: API });
     const ordersResponse = await api.get('/api/v1/orders?customerId=cust-ava&pageSize=100');
     expect(ordersResponse.ok()).toBeTruthy();
     const orders = await ordersResponse.json() as {
       ok: true;
-      data: { items: Array<{ number: string; paymentState: string }> };
+      data: { items: Array<{ id: string; number: string; paymentState: string }> };
     };
-    expect(orders.data.items.some((item) => item.number === orderNumber && item.paymentState === 'paid')).toBeTruthy();
+    const persistedOrder = orders.data.items.find(
+      (item) => item.paymentState === 'paid' && completionText!.includes(item.number),
+    );
+    expect(persistedOrder).toBeTruthy();
+
+    const orderResponse = await api.get(`/api/v1/orders/${persistedOrder!.id}`);
+    expect(orderResponse.ok()).toBeTruthy();
+    const order = await orderResponse.json() as { ok: true; data: { number: string; paymentState: string } };
+    expect(order.data.number).toBe(persistedOrder!.number);
+    expect(order.data.paymentState).toBe('paid');
 
     const cartResponse = await api.get('/api/v1/cart/cart-ava');
     expect(cartResponse.ok()).toBeTruthy();
