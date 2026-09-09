@@ -11,6 +11,10 @@ export interface ImageAsset {
   id: Id;
   url: string;
   alt: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  authorName?: string;
+  authorUrl?: string;
 }
 
 export interface Category {
