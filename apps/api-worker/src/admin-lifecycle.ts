@@ -68,13 +68,14 @@ async function updateProduct(request: Request, env: AdminLifecycleEnv, id: strin
   const product = await rowById<Product>(env, 'products', id);
   if (!product) return fail(request, env, 404, 'PRODUCT_NOT_FOUND', 'Product was not found.');
   const title = input.title?.trim();
+  const subtitle = input.subtitle?.trim();
   const description = input.description?.trim();
   if (input.title !== undefined && !title) return fail(request, env, 400, 'INVALID_PRODUCT_TITLE', 'Product title cannot be empty.');
   if (input.description !== undefined && !description) return fail(request, env, 400, 'INVALID_PRODUCT_DESCRIPTION', 'Product description cannot be empty.');
   const updated: Product = {
     ...product,
     ...(title ? { title } : {}),
-    ...(input.subtitle !== undefined ? { subtitle: input.subtitle.trim() || undefined } : {}),
+    ...(subtitle ? { subtitle } : {}),
     ...(description ? { description } : {}),
     ...(input.featured !== undefined ? { featured: input.featured } : {}),
     ...(input.tags !== undefined ? { tags: [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))] } : {}),
@@ -193,7 +194,6 @@ async function moderateReview(request: Request, env: AdminLifecycleEnv, id: stri
 
 export async function handleAdminLifecycle(request: Request, env: AdminLifecycleEnv): Promise<Response | null> {
   const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
-
   const product = path.match(/^\/api\/v1\/admin\/products\/([^/]+)$/);
   if (request.method === 'PATCH' && product) {
     const body = await request.json().catch(() => null) as AdminProductUpdateInput | null;
