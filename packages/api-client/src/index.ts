@@ -7,8 +7,10 @@ import type {
   ChatRealtimeEvent,
   ChatThreadQuery,
   CheckoutInput,
+  CreateChatThreadInput,
   DemoResetInput,
   DemoResetResult,
+  MarkChatReadInput,
   OrderQuery,
   Page,
   SendChatMessageInput,
@@ -228,8 +230,20 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       listThreads(query: ChatThreadQuery = {}) {
         return request<Page<ChatThread>>(`/api/v1/chat/threads${encodeChatThreadQuery(query)}`);
       },
+      createThread(input: CreateChatThreadInput) {
+        return request<ChatThread>('/api/v1/chat/threads', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        });
+      },
       getThread(id: string) {
         return request<ChatThread>(`/api/v1/chat/threads/${encodeURIComponent(id)}`);
+      },
+      markRead(id: string, input: MarkChatReadInput) {
+        return request<ChatThread>(`/api/v1/chat/threads/${encodeURIComponent(id)}/read`, {
+          method: 'PATCH',
+          body: JSON.stringify(input),
+        });
       },
       listMessages(id: string) {
         return request<ChatMessage[]>(`/api/v1/chat/threads/${encodeURIComponent(id)}/messages`);
