@@ -41,13 +41,16 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Release QA — Worker/D1/Web/Admin/realtime/a11y
         run: pnpm qa:e2e
-      - name: Upload Playwright evidence
+      - name: Enforce bundle performance budgets
+        run: pnpm qa:budgets
+      - name: Upload release QA evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-release-evidence
+          name: release-qa-evidence
           path: |
             playwright-report/
             test-results/
+            artifacts/bundle-budget.json
           if-no-files-found: ignore
           retention-days: 7
