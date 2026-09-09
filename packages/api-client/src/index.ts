@@ -14,6 +14,7 @@ import type {
   OrderQuery,
   Page,
   SendChatMessageInput,
+  WishlistAddItemInput,
 } from '@beeecom/contracts';
 import type {
   Cart,
@@ -25,6 +26,7 @@ import type {
   Order,
   Product,
   Promotion,
+  Wishlist,
 } from '@beeecom/domain';
 
 export class BeeEcomApiError extends Error {
@@ -206,6 +208,22 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
         return request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}/coupon`, {
           method: 'PATCH',
           body: JSON.stringify(input),
+        });
+      },
+    },
+    wishlist: {
+      get(customerId: string) {
+        return request<Wishlist>(`/api/v1/wishlist/${encodeURIComponent(customerId)}`);
+      },
+      add(customerId: string, input: WishlistAddItemInput) {
+        return request<Wishlist>(`/api/v1/wishlist/${encodeURIComponent(customerId)}/items`, {
+          method: 'POST',
+          body: JSON.stringify(input),
+        });
+      },
+      remove(customerId: string, productId: string) {
+        return request<Wishlist>(`/api/v1/wishlist/${encodeURIComponent(customerId)}/items/${encodeURIComponent(productId)}`, {
+          method: 'DELETE',
         });
       },
     },
