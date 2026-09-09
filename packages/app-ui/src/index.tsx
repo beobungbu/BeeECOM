@@ -3,6 +3,8 @@ import type { Money, Product } from '@beeecom/domain';
 import * as React from 'react';
 import { Image } from 'react-native';
 
+export * from './theme-preference.js';
+
 export function formatMoney(value: Money): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

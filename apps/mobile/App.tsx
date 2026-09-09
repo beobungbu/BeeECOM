@@ -15,7 +15,6 @@ import {
 } from '@beeecom/domain';
 import {
   Badge,
-  BeeUIProvider,
   Box,
   Button,
   Card,
@@ -59,7 +58,11 @@ function NavButton(props: { active: boolean; label: string; onPress: () => void 
   );
 }
 
-export default function App() {
+export interface AppProps {
+  themeControl?: React.ReactNode;
+}
+
+export default function App({ themeControl }: AppProps) {
   const [section, setSection] = React.useState<MobileSection>('shop');
   const [products, setProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -310,317 +313,317 @@ export default function App() {
   }
 
   return (
-    <BeeUIProvider>
-      <Screen>
-        <SafeArea className="flex-1" edges={['top', 'left', 'right']}>
-          <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{
-                alignSelf: 'center',
-                gap: 16,
-                maxWidth: isTablet ? 820 : undefined,
-                padding: 16,
-                width: '100%',
-              }}
-            >
-              <Box className="gap-2 py-4">
-                <Box className="flex-row flex-wrap items-center gap-2">
-                  <Text variant="title">BeeECOM Mobile</Text>
-                  <Badge>{Platform.OS}</Badge>
-                  <Badge>{isTablet ? 'tablet' : 'phone'}</Badge>
-                </Box>
-                <Text variant="body">
-                  Native commerce parity app using the same D1 state, Worker contracts and BeeUI public package as Web.
-                </Text>
-                <Box className="flex-row flex-wrap gap-2">
-                  <NavButton active={section === 'shop'} label="Shop" onPress={() => setSection('shop')} />
-                  <NavButton active={section === 'wishlist'} label={`Wishlist ${wishlist?.productIds.length ?? 0}`} onPress={() => setSection('wishlist')} />
-                  <NavButton active={section === 'cart'} label={`Cart ${cart?.lines.length ?? 0}`} onPress={() => setSection('cart')} />
-                  <NavButton active={section === 'orders'} label="Orders" onPress={() => setSection('orders')} />
-                  <NavButton active={section === 'account'} label="Account" onPress={() => setSection('account')} />
-                  <NavButton active={section === 'support'} label="Support" onPress={() => setSection('support')} />
-                </Box>
-                <Button variant="outline" onPress={() => void refresh()}>Refresh server state</Button>
+    <Screen>
+      <SafeArea className="flex-1" edges={['top', 'bottom', 'left', 'right']}>
+        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              alignSelf: 'center',
+              gap: 16,
+              maxWidth: isTablet ? 820 : undefined,
+              padding: 16,
+              width: '100%',
+            }}
+          >
+            <Box className="gap-2 py-4">
+              <Box className="flex-row flex-wrap items-center gap-2">
+                <Text variant="title">BeeECOM Mobile</Text>
+                <Badge>{Platform.OS}</Badge>
+                <Badge>{isTablet ? 'tablet' : 'phone'}</Badge>
               </Box>
+              <Text variant="body">
+                Native commerce parity app using the same D1 state, Worker contracts and BeeUI public package as Web.
+              </Text>
+              <Box className="flex-row flex-wrap gap-2">
+                <NavButton active={section === 'shop'} label="Shop" onPress={() => setSection('shop')} />
+                <NavButton active={section === 'wishlist'} label={`Wishlist ${wishlist?.productIds.length ?? 0}`} onPress={() => setSection('wishlist')} />
+                <NavButton active={section === 'cart'} label={`Cart ${cart?.lines.length ?? 0}`} onPress={() => setSection('cart')} />
+                <NavButton active={section === 'orders'} label="Orders" onPress={() => setSection('orders')} />
+                <NavButton active={section === 'account'} label="Account" onPress={() => setSection('account')} />
+                <NavButton active={section === 'support'} label="Support" onPress={() => setSection('support')} />
+              </Box>
+              <Button variant="outline" onPress={() => void refresh()}>Refresh server state</Button>
+            </Box>
 
-              {notice ? (
-                <Card className="p-4">
-                  <Text variant="body">{notice}</Text>
-                </Card>
-              ) : null}
+            {themeControl}
 
-              {loading ? (
-                <Card className="gap-2 p-5">
-                  <Text variant="title">Loading mobile storefront…</Text>
-                  <Text variant="body">Reading catalog, wishlist, cart, customer, orders and support history from the shared API.</Text>
-                </Card>
-              ) : null}
+            {notice ? (
+              <Card className="p-4">
+                <Text variant="body">{notice}</Text>
+              </Card>
+            ) : null}
 
-              {error ? (
+            {loading ? (
+              <Card className="gap-2 p-5">
+                <Text variant="title">Loading mobile storefront…</Text>
+                <Text variant="body">Reading catalog, wishlist, cart, customer, orders and support history from the shared API.</Text>
+              </Card>
+            ) : null}
+
+            {error ? (
+              <Card className="gap-3 p-5">
+                <Text variant="title">Request failed</Text>
+                <Text variant="body">{error}</Text>
+                <Button onPress={() => void refresh()}>Try again</Button>
+              </Card>
+            ) : null}
+
+            {!loading && section === 'shop' ? (
+              <Box className="gap-4">
                 <Card className="gap-3 p-5">
-                  <Text variant="title">Request failed</Text>
-                  <Text variant="body">{error}</Text>
-                  <Button onPress={() => void refresh()}>Try again</Button>
+                  <Text variant="title">Catalog discovery</Text>
+                  <Input
+                    accessibilityLabel="Search products"
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder="Search products"
+                  />
+                  <Box className="gap-2">
+                    <Text variant="body">Category</Text>
+                    <Select value={categoryId} onValueChange={setCategoryId}>
+                      <SelectTrigger accessibilityLabel="Product category">
+                        <SelectValue placeholder="All categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All categories</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Box>
+                  <Button disabled={busy} onPress={() => void searchCatalog()}>Apply filters</Button>
                 </Card>
-              ) : null}
 
-              {!loading && section === 'shop' ? (
-                <Box className="gap-4">
-                  <Card className="gap-3 p-5">
-                    <Text variant="title">Catalog discovery</Text>
-                    <Input
-                      accessibilityLabel="Search products"
-                      value={search}
-                      onChangeText={setSearch}
-                      placeholder="Search products"
-                    />
-                    <Box className="gap-2">
-                      <Text variant="body">Category</Text>
-                      <Select value={categoryId} onValueChange={setCategoryId}>
-                        <SelectTrigger accessibilityLabel="Product category">
-                          <SelectValue placeholder="All categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All categories</SelectItem>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Box>
-                    <Button disabled={busy} onPress={() => void searchCatalog()}>Apply filters</Button>
+                {products.length === 0 ? (
+                  <Card className="gap-2 p-5">
+                    <Text variant="title">No products</Text>
+                    <Text variant="body">Try another query/category or reset the deterministic demo scenario.</Text>
                   </Card>
+                ) : products.map((product) => (
+                  <ProductCard key={product.id} product={product} onPress={chooseProduct} />
+                ))}
 
-                  {products.length === 0 ? (
-                    <Card className="gap-2 p-5">
-                      <Text variant="title">No products</Text>
-                      <Text variant="body">Try another query/category or reset the deterministic demo scenario.</Text>
-                    </Card>
-                  ) : products.map((product) => (
-                    <ProductCard key={product.id} product={product} onPress={chooseProduct} />
-                  ))}
+                {selected ? (
+                  <Card className="gap-4 p-5">
+                    <Box className="gap-1">
+                      <Text variant="title">{selected.title}</Text>
+                      <Text variant="body">{selected.description}</Text>
+                      <Text variant="body">★ {selected.rating.toFixed(1)} · {selected.reviewCount} reviews</Text>
+                    </Box>
 
-                  {selected ? (
-                    <Card className="gap-4 p-5">
-                      <Box className="gap-1">
-                        <Text variant="title">{selected.title}</Text>
-                        <Text variant="body">{selected.description}</Text>
-                        <Text variant="body">★ {selected.rating.toFixed(1)} · {selected.reviewCount} reviews</Text>
-                      </Box>
+                    <Button variant="outline" disabled={busy} onPress={() => void toggleSelectedWishlist()}>
+                      {selectedIsWishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
+                    </Button>
 
-                      <Button variant="outline" disabled={busy} onPress={() => void toggleSelectedWishlist()}>
-                        {selectedIsWishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
-                      </Button>
+                    <Box className="gap-2">
+                      <Text variant="body">Variant</Text>
+                      {variantId ? (
+                        <Select value={variantId} onValueChange={setVariantId}>
+                          <SelectTrigger accessibilityLabel="Product variant">
+                            <SelectValue placeholder="Choose a variant" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {selected.variants.map((variant) => (
+                              <SelectItem key={variant.id} value={variant.id}>
+                                {variant.title} · {formatMoney(variant.price)} · {variant.inventoryQuantity} left
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Text variant="body">No selectable variants.</Text>
+                      )}
+                    </Box>
 
-                      <Box className="gap-2">
-                        <Text variant="body">Variant</Text>
-                        {variantId ? (
-                          <Select value={variantId} onValueChange={setVariantId}>
-                            <SelectTrigger accessibilityLabel="Product variant">
-                              <SelectValue placeholder="Choose a variant" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {selected.variants.map((variant) => (
-                                <SelectItem key={variant.id} value={variant.id}>
-                                  {variant.title} · {formatMoney(variant.price)} · {variant.inventoryQuantity} left
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Text variant="body">No selectable variants.</Text>
-                        )}
-                      </Box>
-
-                      {selectedVariant ? (
-                        <Box className="gap-3">
-                          <Text variant="body">
-                            {formatMoney(selectedVariant.price)} · {selectedVariant.inventoryState} · SKU {selectedVariant.sku}
-                          </Text>
-                          <Box className="flex-row flex-wrap items-center gap-2">
-                            <Button variant="outline" onPress={() => setQuantity((value) => Math.max(1, value - 1))}>−</Button>
-                            <Text variant="body">Qty {quantity}</Text>
-                            <Button
-                              variant="outline"
-                              onPress={() => setQuantity((value) => Math.min(selectedVariant.inventoryQuantity, value + 1))}
-                            >
-                              +
-                            </Button>
-                          </Box>
-                          <Button disabled={busy || selectedVariant.inventoryQuantity <= 0} onPress={() => void addToCart()}>
-                            {selectedVariant.inventoryQuantity <= 0 ? 'Out of stock' : 'Add to cart'}
+                    {selectedVariant ? (
+                      <Box className="gap-3">
+                        <Text variant="body">
+                          {formatMoney(selectedVariant.price)} · {selectedVariant.inventoryState} · SKU {selectedVariant.sku}
+                        </Text>
+                        <Box className="flex-row flex-wrap items-center gap-2">
+                          <Button variant="outline" onPress={() => setQuantity((value) => Math.max(1, value - 1))}>−</Button>
+                          <Text variant="body">Qty {quantity}</Text>
+                          <Button
+                            variant="outline"
+                            onPress={() => setQuantity((value) => Math.min(selectedVariant.inventoryQuantity, value + 1))}
+                          >
+                            +
                           </Button>
                         </Box>
-                      ) : null}
-                    </Card>
-                  ) : null}
-                </Box>
-              ) : null}
-
-              {!loading && section === 'wishlist' ? (
-                <Box className="gap-3">
-                  <Box className="flex-row flex-wrap items-center justify-between gap-2">
-                    <Text variant="title">Persistent wishlist</Text>
-                    <Button variant="outline" disabled={busy} onPress={() => void refreshWishlist()}>Refresh wishlist</Button>
-                  </Box>
-                  <Text variant="body">Wishlist state is stored in D1 and survives app restart/reload.</Text>
-                  {wishlistProducts.length ? wishlistProducts.map((product) => (
-                    <Card key={product.id} className="gap-3 p-5">
-                      <Text variant="title">{product.title}</Text>
-                      <Text variant="body">{product.subtitle ?? product.description}</Text>
-                      <Text variant="body">From {formatMoney(product.variants[0]?.price ?? { amount: 0, currency: 'USD' })}</Text>
-                      <Box className="flex-row flex-wrap gap-2">
-                        <Button onPress={() => {
-                          setSection('shop');
-                          chooseProduct(product);
-                        }}>View product</Button>
-                        <Button variant="outline" disabled={busy} onPress={() => void removeWishlistItem(product)}>Remove</Button>
+                        <Button disabled={busy || selectedVariant.inventoryQuantity <= 0} onPress={() => void addToCart()}>
+                          {selectedVariant.inventoryQuantity <= 0 ? 'Out of stock' : 'Add to cart'}
+                        </Button>
                       </Box>
-                    </Card>
-                  )) : (
-                    <Card className="gap-2 p-5">
-                      <Text variant="body">Wishlist is empty.</Text>
-                      <Button onPress={() => setSection('shop')}>Browse products</Button>
-                    </Card>
-                  )}
+                    ) : null}
+                  </Card>
+                ) : null}
+              </Box>
+            ) : null}
+
+            {!loading && section === 'wishlist' ? (
+              <Box className="gap-3">
+                <Box className="flex-row flex-wrap items-center justify-between gap-2">
+                  <Text variant="title">Persistent wishlist</Text>
+                  <Button variant="outline" disabled={busy} onPress={() => void refreshWishlist()}>Refresh wishlist</Button>
                 </Box>
-              ) : null}
+                <Text variant="body">Wishlist state is stored in D1 and survives app restart/reload.</Text>
+                {wishlistProducts.length ? wishlistProducts.map((product) => (
+                  <Card key={product.id} className="gap-3 p-5">
+                    <Text variant="title">{product.title}</Text>
+                    <Text variant="body">{product.subtitle ?? product.description}</Text>
+                    <Text variant="body">From {formatMoney(product.variants[0]?.price ?? { amount: 0, currency: 'USD' })}</Text>
+                    <Box className="flex-row flex-wrap gap-2">
+                      <Button onPress={() => {
+                        setSection('shop');
+                        chooseProduct(product);
+                      }}>View product</Button>
+                      <Button variant="outline" disabled={busy} onPress={() => void removeWishlistItem(product)}>Remove</Button>
+                    </Box>
+                  </Card>
+                )) : (
+                  <Card className="gap-2 p-5">
+                    <Text variant="body">Wishlist is empty.</Text>
+                    <Button onPress={() => setSection('shop')}>Browse products</Button>
+                  </Card>
+                )}
+              </Box>
+            ) : null}
 
-              {!loading && section === 'cart' ? (
-                <Card className="gap-4 p-5">
-                  <Text variant="title">Persistent cart</Text>
-                  {cart?.lines.length ? (
-                    <Box className="gap-3">
-                      {cart.lines.map((line) => {
-                        const product = products.find((item) => item.id === line.productId);
-                        const variant = product?.variants.find((item) => item.id === line.variantId);
-                        return (
-                          <Box key={line.id} className="gap-1 rounded-md border border-border p-3">
-                            <Text variant="body">{product?.title ?? line.productId}</Text>
-                            <Text variant="body">{variant?.title ?? line.variantId}</Text>
-                            <Text variant="body">{line.quantity} × {formatMoney(line.unitPrice)}</Text>
-                          </Box>
-                        );
-                      })}
-
-                      <Input
-                        accessibilityLabel="Coupon code"
-                        value={coupon}
-                        onChangeText={setCoupon}
-                        placeholder="WELCOME10"
-                      />
-                      <Button variant="outline" disabled={busy} onPress={() => void applyCoupon()}>Apply coupon</Button>
-                      {cart.couponCode ? <Text variant="body">Applied: {cart.couponCode}</Text> : null}
-
-                      {totals ? (
-                        <Box className="gap-1">
-                          <Text variant="body">Subtotal {formatMoney(totals.subtotal)}</Text>
-                          <Text variant="body">Discount −{formatMoney(totals.discount)}</Text>
-                          <Text variant="body">Shipping {formatMoney(totals.shipping)}</Text>
-                          <Text variant="body">Tax {formatMoney(totals.tax)}</Text>
-                          <Text variant="title">Total {formatMoney(totals.total)}</Text>
+            {!loading && section === 'cart' ? (
+              <Card className="gap-4 p-5">
+                <Text variant="title">Persistent cart</Text>
+                {cart?.lines.length ? (
+                  <Box className="gap-3">
+                    {cart.lines.map((line) => {
+                      const product = products.find((item) => item.id === line.productId);
+                      const variant = product?.variants.find((item) => item.id === line.variantId);
+                      return (
+                        <Box key={line.id} className="gap-1 rounded-md border border-border p-3">
+                          <Text variant="body">{product?.title ?? line.productId}</Text>
+                          <Text variant="body">{variant?.title ?? line.variantId}</Text>
+                          <Text variant="body">{line.quantity} × {formatMoney(line.unitPrice)}</Text>
                         </Box>
-                      ) : null}
+                      );
+                    })}
 
-                      <Button disabled={busy || !customer} onPress={() => void checkout()}>Simulate checkout</Button>
-                    </Box>
-                  ) : (
-                    <Box className="gap-3">
-                      <Text variant="body">Cart is empty.</Text>
-                      <Button onPress={() => setSection('shop')}>Browse products</Button>
-                    </Box>
-                  )}
-                </Card>
-              ) : null}
+                    <Input
+                      accessibilityLabel="Coupon code"
+                      value={coupon}
+                      onChangeText={setCoupon}
+                      placeholder="WELCOME10"
+                    />
+                    <Button variant="outline" disabled={busy} onPress={() => void applyCoupon()}>Apply coupon</Button>
+                    {cart.couponCode ? <Text variant="body">Applied: {cart.couponCode}</Text> : null}
 
-              {!loading && section === 'orders' ? (
-                <Box className="gap-3">
-                  <Box className="flex-row flex-wrap items-center justify-between gap-2">
-                    <Text variant="title">Order history</Text>
-                    <Button variant="outline" onPress={() => void refreshOrders()}>Refresh orders</Button>
-                  </Box>
-                  {orders.length ? orders.map((order) => (
-                    <Card key={order.id} className="gap-2 p-5">
-                      <Box className="flex-row flex-wrap items-center gap-2">
-                        <Text variant="title">{order.number}</Text>
-                        <Badge>{order.paymentState}</Badge>
-                        <Badge>{order.fulfillmentState}</Badge>
+                    {totals ? (
+                      <Box className="gap-1">
+                        <Text variant="body">Subtotal {formatMoney(totals.subtotal)}</Text>
+                        <Text variant="body">Discount −{formatMoney(totals.discount)}</Text>
+                        <Text variant="body">Shipping {formatMoney(totals.shipping)}</Text>
+                        <Text variant="body">Tax {formatMoney(totals.tax)}</Text>
+                        <Text variant="title">Total {formatMoney(totals.total)}</Text>
                       </Box>
-                      <Text variant="body">{order.lines.length} line(s) · {formatMoney(order.total)}</Text>
-                      <Text variant="body">Placed {order.placedAt}</Text>
-                      {order.lines.map((line) => (
-                        <Text key={line.id} variant="body">{line.title} · {line.variantTitle} × {line.quantity}</Text>
-                      ))}
-                    </Card>
-                  )) : (
-                    <Card className="p-5">
-                      <Text variant="body">No orders in this scenario.</Text>
-                    </Card>
-                  )}
+                    ) : null}
+
+                    <Button disabled={busy || !customer} onPress={() => void checkout()}>Simulate checkout</Button>
+                  </Box>
+                ) : (
+                  <Box className="gap-3">
+                    <Text variant="body">Cart is empty.</Text>
+                    <Button onPress={() => setSection('shop')}>Browse products</Button>
+                  </Box>
+                )}
+              </Card>
+            ) : null}
+
+            {!loading && section === 'orders' ? (
+              <Box className="gap-3">
+                <Box className="flex-row flex-wrap items-center justify-between gap-2">
+                  <Text variant="title">Order history</Text>
+                  <Button variant="outline" onPress={() => void refreshOrders()}>Refresh orders</Button>
                 </Box>
-              ) : null}
-
-              {!loading && section === 'account' ? (
-                <Card className="gap-4 p-5">
-                  <Text variant="title">Account</Text>
-                  {customer ? (
-                    <Box className="gap-3">
-                      <Box className="flex-row flex-wrap items-center gap-2">
-                        <Text variant="body">{customer.displayName}</Text>
-                        <Badge>{customer.tier}</Badge>
-                      </Box>
-                      <Text variant="body">{customer.email}</Text>
-                      <Text variant="body">Lifetime value: {formatMoney(customer.lifetimeValue)}</Text>
-                      <Text variant="title">Addresses</Text>
-                      {customer.addresses.map((address) => (
-                        <Box key={address.id} className="gap-1 rounded-md border border-border p-3">
-                          <Text variant="body">{address.label}{address.isDefault ? ' · default' : ''}</Text>
-                          <Text variant="body">{address.fullName} · {address.phone}</Text>
-                          <Text variant="body">{address.line1}, {address.city}, {address.region} {address.postalCode}</Text>
-                        </Box>
-                      ))}
+                {orders.length ? orders.map((order) => (
+                  <Card key={order.id} className="gap-2 p-5">
+                    <Box className="flex-row flex-wrap items-center gap-2">
+                      <Text variant="title">{order.number}</Text>
+                      <Badge>{order.paymentState}</Badge>
+                      <Badge>{order.fulfillmentState}</Badge>
                     </Box>
-                  ) : (
-                    <Text variant="body">Customer profile unavailable.</Text>
-                  )}
-                </Card>
-              ) : null}
+                    <Text variant="body">{order.lines.length} line(s) · {formatMoney(order.total)}</Text>
+                    <Text variant="body">Placed {order.placedAt}</Text>
+                    {order.lines.map((line) => (
+                      <Text key={line.id} variant="body">{line.title} · {line.variantTitle} × {line.quantity}</Text>
+                    ))}
+                  </Card>
+                )) : (
+                  <Card className="p-5">
+                    <Text variant="body">No orders in this scenario.</Text>
+                  </Card>
+                )}
+              </Box>
+            ) : null}
 
-              {!loading && section === 'support' ? (
-                <Card className="gap-4 p-5">
-                  <Box className="flex-row flex-wrap items-center gap-2">
-                    <Text variant="title">Support conversation</Text>
-                    <Badge>{chatStatus}</Badge>
-                  </Box>
-                  <Text variant="body">
-                    History comes from D1; realtime delivery uses the same Durable Object room as Storefront Web and Admin.
-                  </Text>
-
-                  <Box className="gap-2">
-                    {messages.map((message) => (
-                      <Box key={message.id} className="gap-1 rounded-md border border-border p-3">
-                        <Text variant="body">{message.senderRole === 'customer' ? 'You' : 'Support'}: {message.body}</Text>
-                        <Text variant="body">{message.sentAt}</Text>
+            {!loading && section === 'account' ? (
+              <Card className="gap-4 p-5">
+                <Text variant="title">Account</Text>
+                {customer ? (
+                  <Box className="gap-3">
+                    <Box className="flex-row flex-wrap items-center gap-2">
+                      <Text variant="body">{customer.displayName}</Text>
+                      <Badge>{customer.tier}</Badge>
+                    </Box>
+                    <Text variant="body">{customer.email}</Text>
+                    <Text variant="body">Lifetime value: {formatMoney(customer.lifetimeValue)}</Text>
+                    <Text variant="title">Addresses</Text>
+                    {customer.addresses.map((address) => (
+                      <Box key={address.id} className="gap-1 rounded-md border border-border p-3">
+                        <Text variant="body">{address.label}{address.isDefault ? ' · default' : ''}</Text>
+                        <Text variant="body">{address.fullName} · {address.phone}</Text>
+                        <Text variant="body">{address.line1}, {address.city}, {address.region} {address.postalCode}</Text>
                       </Box>
                     ))}
                   </Box>
+                ) : (
+                  <Text variant="body">Customer profile unavailable.</Text>
+                )}
+              </Card>
+            ) : null}
 
-                  <Input
-                    accessibilityLabel="Native support message"
-                    value={chatDraft}
-                    onChangeText={setChatDraft}
-                    placeholder="Ask support about your order"
-                  />
-                  <Button disabled={busy || !chatDraft.trim()} onPress={() => void sendSupportMessage()}>
-                    {busy ? 'Sending…' : 'Send message'}
-                  </Button>
-                </Card>
-              ) : null}
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeArea>
-      </Screen>
-    </BeeUIProvider>
+            {!loading && section === 'support' ? (
+              <Card className="gap-4 p-5">
+                <Box className="flex-row flex-wrap items-center gap-2">
+                  <Text variant="title">Support conversation</Text>
+                  <Badge>{chatStatus}</Badge>
+                </Box>
+                <Text variant="body">
+                  History comes from D1; realtime delivery uses the same Durable Object room as Storefront Web and Admin.
+                </Text>
+
+                <Box className="gap-2">
+                  {messages.map((message) => (
+                    <Box key={message.id} className="gap-1 rounded-md border border-border p-3">
+                      <Text variant="body">{message.senderRole === 'customer' ? 'You' : 'Support'}: {message.body}</Text>
+                      <Text variant="body">{message.sentAt}</Text>
+                    </Box>
+                  ))}
+                </Box>
+
+                <Input
+                  accessibilityLabel="Native support message"
+                  value={chatDraft}
+                  onChangeText={setChatDraft}
+                  placeholder="Ask support about your order"
+                />
+                <Button disabled={busy || !chatDraft.trim()} onPress={() => void sendSupportMessage()}>
+                  {busy ? 'Sending…' : 'Send message'}
+                </Button>
+              </Card>
+            ) : null}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeArea>
+    </Screen>
   );
 }
