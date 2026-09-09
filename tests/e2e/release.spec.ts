@@ -123,7 +123,7 @@ test.describe('Golden customer → Admin → support journey', () => {
     expect(latestOrderNumber).toBeTruthy();
 
     await adminPage.getByRole('button', { name: 'Refresh canonical state' }).click();
-    await expect(adminPage.getByText(latestOrderNumber!, { exact: true })).toBeVisible();
+    await expect(adminPage.getByLabel(`Active order ${latestOrderNumber!}`)).toBeVisible();
 
     const customerMessage = `Realtime customer QA ${Date.now()}`;
     await customerPage.getByLabel('Support message').fill(customerMessage);
