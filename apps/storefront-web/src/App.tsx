@@ -1,4 +1,4 @@
-import { createBeeEcomClient } from '@beeecom/api-client';
+import { createBeeEcomClient, type ChatRealtimeStatus } from '@beeecom/api-client';
 import { formatMoney, ProductGrid } from '@beeecom/app-ui';
 import {
   calculateCartTotals,
@@ -34,6 +34,10 @@ const CART_ID = 'cart-ava';
 const CUSTOMER_ID = 'cust-ava';
 const THREAD_ID = 'thread-ava-1';
 
+function appendMessage(messages: ChatMessage[], message: ChatMessage): ChatMessage[] {
+  return messages.some((item) => item.id === message.id) ? messages : [...messages, message];
+}
+
 export function App() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [selected, setSelected] = React.useState<Product | null>(null);
@@ -44,12 +48,17 @@ export function App() {
   const [promotions, setPromotions] = React.useState<Promotion[]>([]);
   const [lastOrder, setLastOrder] = React.useState<Order | null>(null);
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const [chatStatus, setChatStatus] = React.useState<ChatRealtimeStatus>('connecting');
   const [coupon, setCoupon] = React.useState('WELCOME10');
   const [chatDraft, setChatDraft] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
+
+  const refreshChatHistory = React.useCallback(async () => {
+    setMessages(await api.chat.listMessages(THREAD_ID));
+  }, []);
 
   const refresh = React.useCallback(async () => {
     setLoading(true);
@@ -77,6 +86,20 @@ export function App() {
   React.useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  React.useEffect(() => {
+    const subscription = api.chat.subscribe(THREAD_ID, {
+      onEvent(event) {
+        setMessages((current) => appendMessage(current, event.message));
+      },
+      onStatus: setChatStatus,
+      onResync: refreshChatHistory,
+      onError(cause) {
+        console.warn('Customer support realtime transport error', cause);
+      },
+    });
+    return () => subscription.close();
+  }, [refreshChatHistory]);
 
   const chooseProduct = React.useCallback((product: Product) => {
     setSelected(product);
@@ -146,16 +169,16 @@ export function App() {
     setBusy(true);
     setError(null);
     try {
-      await api.chat.sendMessage(THREAD_ID, {
+      const message = await api.chat.sendMessage(THREAD_ID, {
         threadId: THREAD_ID,
         senderId: CUSTOMER_ID,
         senderRole: 'customer',
         body,
         clientMessageId: `web-customer-${Date.now()}`,
       });
-      setMessages(await api.chat.listMessages(THREAD_ID));
+      setMessages((current) => appendMessage(current, message));
       setChatDraft('');
-      setNotice('Support message persisted. Reload the page to verify history survives.');
+      setNotice('Message persisted to D1 and published to connected support agents.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Support message failed.');
     } finally {
@@ -338,8 +361,11 @@ export function App() {
 
           <Card className="gap-4 p-5 md:p-6">
             <Box className="gap-1">
-              <Text variant="title">Support chat</Text>
-              <Text variant="body">HTTP history is canonical and durable; realtime fan-out is the next WBS-09 increment.</Text>
+              <Box className="flex-row flex-wrap items-center gap-2">
+                <Text variant="title">Support chat</Text>
+                <Badge>{chatStatus}</Badge>
+              </Box>
+              <Text variant="body">D1 is canonical history; Durable Objects fan out persisted messages and reconnect resyncs D1.</Text>
             </Box>
             <Box className="gap-2">
               {messages.map((message) => (
