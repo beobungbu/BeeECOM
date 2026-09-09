@@ -17,6 +17,22 @@ describe('deterministic demo datasets', () => {
     expect(large.products).toHaveLength(80);
   });
 
+  it('keeps real showcase media stable, accessible and attributed', () => {
+    const dataset = createDemoDataset('healthy');
+
+    for (const product of dataset.products) {
+      expect(product.images.length).toBeGreaterThan(0);
+      for (const image of product.images) {
+        expect(image.url).toMatch(/^https:\/\/images\.unsplash\.com\/photo-/);
+        expect(image.url).not.toContain('placehold.co');
+        expect(image.alt.trim().length).toBeGreaterThan(10);
+        expect(image.sourceName).toBe('Unsplash');
+        expect(image.sourceUrl).toMatch(/^https:\/\/unsplash\.com\/photos\//);
+        expect(image.authorName?.trim().length).toBeGreaterThan(1);
+      }
+    }
+  });
+
   it('keeps chat history in the reconnect scenario', () => {
     const dataset = createDemoDataset('chat-reconnect');
     expect(dataset.chatMessages.map((message) => message.id)).toContain('msg-reconnect-1');
