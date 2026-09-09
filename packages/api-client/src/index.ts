@@ -71,6 +71,14 @@ function encodeChatThreadQuery(input: ChatThreadQuery): string {
   return query ? `?${query}` : '';
 }
 
+export function toWebSocketUrl(baseUrl: string, path: string): string {
+  const url = new URL(path, `${baseUrl.replace(/\/$/, '')}/`);
+  if (url.protocol === 'http:') url.protocol = 'ws:';
+  else if (url.protocol === 'https:') url.protocol = 'wss:';
+  else throw new Error(`Unsupported API URL protocol: ${url.protocol}`);
+  return url.toString();
+}
+
 export function createBeeEcomClient(options: BeeEcomClientOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const baseUrl = options.baseUrl.replace(/\/$/, '');
@@ -152,6 +160,9 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
           method: 'POST',
           body: JSON.stringify(input),
         });
+      },
+      webSocketUrl(id: string) {
+        return toWebSocketUrl(baseUrl, `/ws/chat/${encodeURIComponent(id)}`);
       },
     },
     demo: {
