@@ -36,7 +36,11 @@ export default function App() {
   const isTablet = width >= 768;
 
   const loadChatHistory = React.useCallback(async () => {
-    setMessages(await api.chat.listMessages(THREAD_ID));
+    const [history] = await Promise.all([
+      api.chat.listMessages(THREAD_ID),
+      api.chat.markRead(THREAD_ID, { readerRole: 'customer' }),
+    ]);
+    setMessages(history);
   }, []);
 
   const refresh = React.useCallback(async () => {
@@ -46,6 +50,7 @@ export default function App() {
       const [page, history] = await Promise.all([
         api.catalog.listProducts({ sort: 'featured', pageSize: 12 }),
         api.chat.listMessages(THREAD_ID),
+        api.chat.markRead(THREAD_ID, { readerRole: 'customer' }),
       ]);
       setProducts(page.items);
       setMessages(history);
@@ -64,6 +69,10 @@ export default function App() {
     const subscription = api.chat.subscribe(THREAD_ID, {
       onEvent(event) {
         setMessages((current) => appendMessage(current, event.message));
+        if (event.message.senderRole === 'support-agent') {
+          void api.chat.markRead(THREAD_ID, { readerRole: 'customer' })
+            .catch((cause) => console.warn('Unable to persist native customer read state', cause));
+        }
       },
       onStatus: setChatStatus,
       onResync: loadChatHistory,
