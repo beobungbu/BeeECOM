@@ -100,6 +100,14 @@ export interface SendChatMessageInput {
   clientMessageId: string;
 }
 
+export interface ChatMessagePersistedEvent {
+  type: 'message.persisted';
+  threadId: string;
+  message: ChatMessage;
+}
+
+export type ChatRealtimeEvent = ChatMessagePersistedEvent;
+
 export interface DemoResetInput {
   scenario: DemoScenarioName;
 }
