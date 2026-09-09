@@ -26,7 +26,6 @@ function TokenProbe({ id, label }: ProbeProps) {
   const primary = useBeeToken('colors.primary');
   const radius = useBeeToken('radius.md');
   const motion = useBeeToken('motion.normal');
-  const imperativeGlobalPrimary = getBeeToken('colors.primary');
 
   return (
     <Card testID={`${id}-probe`} className="gap-1 p-3">
@@ -35,9 +34,26 @@ function TokenProbe({ id, label }: ProbeProps) {
       <Text testID={`${id}-primary`} variant="body">primary={primary}</Text>
       <Text testID={`${id}-radius`} variant="body">radius={radius}</Text>
       <Text testID={`${id}-motion`} variant="body">motion={motion}</Text>
-      <Text testID={`${id}-imperative-global-primary`} variant="body">
-        imperative-global-primary={imperativeGlobalPrimary}
+    </Card>
+  );
+}
+
+function ImperativeGlobalProbe() {
+  const [primary, setPrimary] = React.useState<string | null>(null);
+
+  return (
+    <Card className="gap-2 p-3">
+      <Text variant="caption">Imperative global-only token read</Text>
+      <Text testID="scoped-imperative-global-primary" variant="body">
+        imperative-global-primary={primary ?? 'unread'}
       </Text>
+      <Button
+        accessibilityLabel="Read imperative global primary"
+        variant="outline"
+        onPress={() => setPrimary(getBeeToken('colors.primary'))}
+      >
+        Read global token
+      </Button>
     </Card>
   );
 }
@@ -50,7 +66,8 @@ function StatefulScopedContent({ appearance }: { appearance: 'light' | 'dark' })
     <BeeThemeScope brand="violet" appearance={appearance}>
       <Box testID="violet-scope" className="gap-3 rounded-xl border border-border bg-background p-4">
         <Text variant="title">Violet {appearance} scope</Text>
-        <TokenProbe id="scoped" label="Scoped hook + imperative token reads" />
+        <TokenProbe id="scoped" label="Scoped hook token reads" />
+        <ImperativeGlobalProbe />
 
         <Box className="flex-row flex-wrap gap-2">
           <Button accessibilityLabel="Increment scoped state" onPress={() => setCount((value) => value + 1)}>
