@@ -31,16 +31,16 @@
 | P02 | React / RN / RN Web compatibility | 🟡 PARTIAL | `TYPE BUILD-WEB BUILD-IOS BUILD-ANDROID` | Runtime parity + dependency drift | — |
 | P03 | Expo SDK 57 consumer compatibility | 🚨 MISMATCH | `PKG BUILD-WEB BUILD-IOS BUILD-ANDROID` | Canonical `@expo/metro-runtime` peer pin drifts | [#544](https://github.com/beobungbu/BeeUI/issues/544) |
 | P04 | Vite + React Native Web integration | ✅ VERIFIED | `SOURCE DOC TYPE BUILD-WEB WEB-RUNTIME` | Recheck pinned `vite-plugin-rnw@0.0.12` before a Vite 9 bump; Vite 8 currently emits the known future-deprecation warning | — |
-| P05 | Application-root provider runtime | 🔧 CONSUMER FIXED | `SOURCE DOC TYPE` + all builds + Toast `WEB-RUNTIME` | Keep one root provider; add modal/anchored-overlay/native provider runtime evidence | — |
+| P05 | Application-root provider runtime | 🔧 CONSUMER FIXED | `SOURCE DOC TYPE` + all builds + Toast/Dialog/AlertDialog `WEB-RUNTIME` | Keep one root provider; add nested anchored/native provider runtime evidence | — |
 | P06 | Safe-area ownership | 🚨 MISMATCH | `SOURCE DOC BUILD-IOS BUILD-ANDROID` | Native notch/home-indicator runtime; Web docs disagree | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
 | P07 | Global System / Light / Dark preference | 🚨 MISMATCH | `TYPE` + all builds + `WEB-RUNTIME VISUAL DOC LLM SOURCE` | Native OS-switch runtime; branded System semantics | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
 | P08 | Scoped theme / BeeThemeScope | ⬜ NOT CHECKED | — | Add scoped brand/theme consumer fixture | — |
 | P09 | Semantic tokens / theme CSS | 🟡 PARTIAL | `PKG TYPE SOURCE` + all builds | Full color/type/spacing/motion/runtime-override coverage | — |
 | P10 | Responsive / layout / breakpoints | 🟡 PARTIAL | all builds + partial `RESP` | Formal viewport, zoom, landscape, tablet, large-text matrix | — |
-| P11 | Accessibility system | 🟡 PARTIAL | `A11Y WEB-RUNTIME TYPE` now includes Select keyboard/focus and Toast live region | Per-component names/states + native assistive tech; Table bridge still mismatches | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| P11 | Accessibility system | 🟡 PARTIAL | `A11Y WEB-RUNTIME TYPE` includes Select keyboard/focus, Dialog/AlertDialog focus/dismissal and Toast live region | Per-component names/states + native assistive tech; Table bridge still mismatches | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
 | P12 | Forms / selection | 🟡 PARTIAL | Input + Select: `TYPE SOURCE DOC` + all builds; Select `WEB-RUNTIME` keyboard/typeahead/focus | Validation composition + native Input/Select runtime | — |
 | P13 | Anchored overlays | 🟡 PARTIAL | Select: all builds + `WEB-RUNTIME` keyboard dismissal/typeahead/collision containment | Native runtime; Popover/Menu/Tooltip still unused | — |
-| P14 | Modal overlays / Sheet | ⬜ NOT CHECKED | — | Dialog/AlertDialog/Sheet realistic flows | — |
+| P14 | Modal overlays / Sheet | 🟡 PARTIAL | Dialog + AlertDialog: `TYPE SOURCE DOC BUILD-WEB BUILD-IOS BUILD-ANDROID WEB-RUNTIME A11Y`; real Admin flows pass | Native modal runtime + Sheet Web/native runtime | — |
 | P15 | Data display / Table | 🚨 MISMATCH | `TYPE BUILD-WEB SOURCE DOC WEB-RUNTIME`; real HTML table/header/body semantics pass | Web accessibility prop bridge + stacked/sort/selection/native runtime | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
 | P16 | Feedback / status / loading | 🟡 PARTIAL | Badge/Card/Text all builds; Toast `TYPE BUILD-WEB BUILD-IOS BUILD-ANDROID WEB-RUNTIME A11Y` | Toast FIFO/action/persistent/native runtime; Spinner/Skeleton/StateMessage | — |
 | P17 | Date/time | ⬜ NOT CHECKED | — | Calendar + native picker flows | — |
@@ -106,8 +106,8 @@
 
 | # | Module | Public family | Used | Status | Evidence / next | Issue |
 | ---: | --- | --- | ---: | --- | --- | --- |
-| 32 | `dialog` | Dialog family | No | ⬜ | trap/restore/Escape/back/native modal | — |
-| 33 | `alert-dialog` | AlertDialog family | No | ⬜ | destructive-confirm semantics/focus | — |
+| 32 | `dialog` | Dialog family | Yes | 🟡 | all builds + `WEB-RUNTIME A11Y`: order-detail focus trap, Escape/backdrop dismissal, trigger focus restore; native runtime remains | — |
+| 33 | `alert-dialog` | AlertDialog family | Yes | 🟡 | all builds + `WEB-RUNTIME A11Y`: destructive refund ignores Escape/backdrop; Cancel/Action semantics + focus restore pass; native runtime remains | — |
 | 34 | `popover` | Popover family | No | ⬜ | geometry/collision/dismiss | — |
 | 35 | `dropdown-menu` | DropdownMenu family | No | ⬜ | keyboard/typeahead/menu state | — |
 | 36 | `sheet` | Sheet family | No | ⬜ | native gesture providers/snap/dismiss/keyboard/a11y | — |
@@ -164,7 +164,7 @@
 | Contract | Status | Evidence | To reach full verification | Issue |
 | --- | --- | --- | --- | --- |
 | Exactly one root BeeUIProvider | 🔧 CONSUMER FIXED | source/docs audit + all builds | Add regression assertion | — |
-| Provider encloses all BeeUI consumers | 🔧 CONSUMER FIXED | source audit + all builds + Toast provider `WEB-RUNTIME` | Modal/anchored/native runtime | — |
+| Provider encloses all BeeUI consumers | 🔧 CONSUMER FIXED | source audit + all builds + Toast/Dialog/AlertDialog `WEB-RUNTIME` | Nested anchored/native runtime | — |
 | Native top inset owner | 🟡 | composition + builds | notched iOS/Android runtime | — |
 | Native bottom inset owner | 🟡 | composition + builds | home-indicator/navigation-bar runtime | — |
 | Web root SafeArea policy | 🚨 | current docs contradict | align docs + starter + LLM guidance | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
@@ -215,6 +215,26 @@
 | focus restore after dismiss | ✅ Web | trigger focused again after Escape | native runtime |
 | flip/shift/collision | ✅ Web | listbox remains inside 390×300 constrained viewport | native runtime + more placements |
 | provider/portal nesting | 🟡 | root provider corrected + ordinary Select portal runtime | nested overlay/modal runtime |
+
+## Dialog
+
+| Contract | Status | Evidence | Next |
+| --- | --- | --- | --- |
+| real order-detail composition | ✅ Web | Admin order-detail flow, PR #31 exact head `70e5295c…`, CI run #97 | native runtime |
+| initial focus + focus trap | ✅ Web | Chromium proves the only focusable Close action receives initial focus and Tab remains trapped | multi-control + native runtime |
+| Escape dismissal | ✅ Web | physical Escape closes the Dialog | native request-close runtime |
+| backdrop dismissal | ✅ Web | backdrop click closes the Dialog | native runtime |
+| trigger focus restoration | ✅ Web | trigger regains focus after Escape/backdrop dismissal | native runtime |
+
+## AlertDialog
+
+| Contract | Status | Evidence | Next |
+| --- | --- | --- | --- |
+| destructive confirmation semantics | ✅ Web | real paid-order refund flow, PR #31 exact head `70e5295c…`, CI run #97 | native runtime |
+| Escape does not dismiss | ✅ Web | Chromium proves physical Escape leaves AlertDialog open | native accessibility/request-close policy |
+| backdrop does not dismiss | ✅ Web | backdrop click leaves AlertDialog open | native runtime |
+| explicit Cancel dismisses + restores focus | ✅ Web | `Keep payment` closes and returns focus to Refund trigger | native runtime |
+| explicit Action mutates persisted state | ✅ Web | `Refund order` closes, D1-backed payment becomes `refunded`, success Toast live region passes | native runtime |
 
 ## Table
 
