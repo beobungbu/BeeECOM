@@ -1,271 +1,255 @@
 # BeeUI external-consumer validation matrix
 
-> Canonical BeeECOM tracker for validating BeeUI from an external application.
+> Canonical BeeECOM tracker for validating BeeUI from a real external application.
 >
-> BeeUI source authority: `development` branch, public surface derived from `registry/registry.json`, `packages/ui/src/index.ts`, package manifests and generated `llms-components.txt`.
+> BeeUI authority: `development`; public component inventory derived from `registry/registry.json`, `packages/ui/src/index.ts` and generated `llms-components.txt`.
 > BeeECOM package baseline: `@beemvp/beeui-* 0.86.2-rc.1` unless a row says otherwise.
->
-> This matrix is intentionally stricter than “build passed”. A surface is **VERIFIED** only for the evidence classes explicitly recorded in that row.
 
-## Status legend
+## Status
 
 | Status | Meaning |
 | --- | --- |
-| ✅ VERIFIED | The stated contract has direct evidence for every evidence class required by that row. |
-| 🟡 PARTIAL | Some evidence exists, but one or more required platform/runtime/a11y/docs dimensions remain unproved. |
-| 🧪 IN PROGRESS | Active validation is underway on the current BeeECOM branch/PR. |
-| 🚨 MISMATCH | BeeUI human docs, LLM guidance, package/type surface or runtime behavior disagree. An upstream issue should exist. |
-| 🔧 CONSUMER FIXED | BeeECOM was using BeeUI incorrectly; BeeUI contract was coherent and BeeECOM was corrected. |
-| ⬜ NOT CHECKED | No BeeECOM-specific validation has been completed yet. |
-| ⛔ BLOCKED | Validation cannot honestly complete until a dependency/upstream problem is resolved. |
+| ✅ VERIFIED | Direct evidence exists for every evidence class required by the row. |
+| 🟡 PARTIAL | Some evidence exists, but the contract is not fully proved. |
+| 🧪 IN PROGRESS | Active validation is underway. |
+| 🚨 MISMATCH | Docs, LLM guidance, public API/type surface or runtime disagree. |
+| 🔧 CONSUMER FIXED | BeeECOM usage was wrong; BeeUI contract was coherent and BeeECOM was corrected. |
+| ⬜ NOT CHECKED | No BeeECOM-specific validation yet. |
+| ⛔ BLOCKED | Honest validation cannot complete until an upstream/dependency blocker is resolved. |
 
 ## Evidence classes
 
-| Code | Evidence |
-| --- | --- |
-| `PKG` | Clean/external package resolution or install at the public package boundary. |
-| `TYPE` | Strict TypeScript/public API acceptance. |
-| `BUILD-WEB` | Production Web build/export. |
-| `BUILD-IOS` | iOS bundle/export/compile evidence. |
-| `BUILD-ANDROID` | Android bundle/export/compile evidence. |
-| `WEB-RUNTIME` | Real browser interaction/behavior evidence. |
-| `IOS-RUNTIME` | iOS simulator/device runtime evidence. |
-| `ANDROID-RUNTIME` | Android emulator/device runtime evidence. |
-| `A11Y` | Accessibility-tree/axe/keyboard/screen-reader evidence appropriate to the claim. |
-| `RESP` | Explicit responsive/reflow/viewport evidence. |
-| `VISUAL` | Screenshot/visual-regression evidence. |
-| `DOC` | Current human-facing BeeUI docs reviewed against source/runtime. |
-| `LLM` | Current `llms*.txt` / AI-agent guidance reviewed against source/runtime. |
-| `SOURCE` | BeeUI implementation/public source contract directly reviewed. |
+`PKG` package boundary · `TYPE` strict TypeScript · `BUILD-WEB` production Web build · `BUILD-IOS` iOS bundle/compile · `BUILD-ANDROID` Android bundle/compile · `WEB-RUNTIME` real browser · `IOS-RUNTIME` simulator/device · `ANDROID-RUNTIME` emulator/device · `A11Y` accessibility evidence · `RESP` responsive/reflow · `VISUAL` visual evidence · `DOC` human docs · `LLM` machine/agent guidance · `SOURCE` BeeUI source/public contract.
 
 ---
 
-# L0 — BeeUI product-capability matrix
+# L0 — Product capability matrix
 
-| ID | Capability | BeeECOM coverage | Status | Evidence obtained | Missing evidence / next check | BeeUI issue ref |
-| --- | --- | --- | --- | --- | --- | --- |
-| P01 | Distribution / npm RC consumption | BeeECOM installs and builds against `0.86.2-rc.1` public package boundary | 🚨 MISMATCH | `PKG`, `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID`, `DOC`, `LLM` | Publication-state authority must agree across README, generated docs and LLM files | [BeeUI #543](https://github.com/beobungbu/BeeUI/issues/543) |
-| P02 | React / React Native / RN Web compatibility | React 19.2.3, RN 0.86.2, RN Web 0.21.0 consumer path exercised | 🟡 PARTIAL | `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID` | Dedicated runtime parity and dependency-drift checks | — |
-| P03 | Expo SDK 57 package-consumer compatibility | Expo consumer bundles successfully but clean install exposes metro-runtime peer drift | 🚨 MISMATCH | `PKG`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID` | Resolve Expo / `@expo/metro-runtime` canonical pin; native runtime remains separate | [BeeUI #544](https://github.com/beobungbu/BeeUI/issues/544) |
-| P04 | Vite + React Native Web integration | BeeECOM uses RNW → Tailwind → Uniwind plugin ordering and canonical CSS source globs | ✅ VERIFIED | `SOURCE`, `DOC`, `TYPE`, `BUILD-WEB`, `WEB-RUNTIME` | Re-check on BeeUI/toolchain version bump | — |
-| P05 | Provider/runtime root | One application-root `BeeUIProvider` per Storefront, Admin and Mobile | 🔧 CONSUMER FIXED | `SOURCE`, `DOC`, `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID` | Native overlay/toast runtime coverage still belongs to their component rows | — |
-| P06 | Safe-area ownership | Mobile explicitly owns top/bottom/left/right in current shell; Web does not rely on native inset behavior | 🚨 MISMATCH | `SOURCE`, `DOC`, `TYPE`, `BUILD-IOS`, `BUILD-ANDROID` | Real notched-device/simulator evidence; resolve contradictory Web docs | [BeeUI #547](https://github.com/beobungbu/BeeUI/issues/547) |
-| P07 | Global theme preference | `system | light | dark`, app-owned persistence, direct Uniwind authority | 🚨 MISMATCH | `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID`, `WEB-RUNTIME`, `VISUAL`, `SOURCE`, `DOC`, `LLM` | Native OS-change runtime proof; clarify branded System semantics | [BeeUI #545](https://github.com/beobungbu/BeeUI/issues/545) |
-| P08 | Scoped themes / `BeeThemeScope` | Not yet consumed by BeeECOM | ⬜ NOT CHECKED | — | Add branded/scoped merchandising/admin surface and verify nesting + token reads | — |
-| P09 | Semantic tokens / theme CSS | BeeECOM uses `@beemvp/beeui-tokens/theme.css` and semantic utility names | 🟡 PARTIAL | `PKG`, `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID`, `SOURCE` | Systematic color/spacing/type/motion token coverage and runtime overrides | — |
-| P10 | Responsive layout / breakpoints | Storefront/Admin exercise mobile-first Web breakpoints; Mobile uses measured width for phone/tablet | 🟡 PARTIAL | `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID`, partial `RESP` | Formal viewport matrix, zoom/reflow, landscape, tablet and large-text evidence | — |
-| P11 | Accessibility baseline | Accessible labels are used on active controls; automated app-level checks exist | 🟡 PARTIAL | partial `A11Y`, `WEB-RUNTIME`, `TYPE` | Per-component keyboard/focus/name/state + native assistive-tech evidence | [BeeUI #546](https://github.com/beobungbu/BeeUI/issues/546) |
-| P12 | Forms and selection | Input + Select are used in storefront/admin/mobile flows | 🟡 PARTIAL | `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID`, `DOC`, `SOURCE` | Explicit keyboard/typeahead/focus/native runtime and validation compositions | — |
-| P13 | Anchored overlays | Select exercises BeeUI anchored-overlay runtime | 🟡 PARTIAL | `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID`, `DOC`, `SOURCE` | Browser geometry/flip/shift/dismiss + native runtime evidence; Popover/Menu/Tooltip unused | — |
-| P14 | Modal overlays / Sheet | Not yet used by BeeECOM | ⬜ NOT CHECKED | — | Add Dialog/AlertDialog/Sheet flows with provider, focus and gesture evidence | — |
-| P15 | Data display / Table | Admin uses Table against realistic inventory data | 🚨 MISMATCH | `TYPE`, `BUILD-WEB`, `SOURCE`, `DOC` | Web accessibility prop bridge and explicit table a11y/runtime tests | [BeeUI #546](https://github.com/beobungbu/BeeUI/issues/546) |
-| P16 | Feedback / status / loading | Badge/Card/Text + app-owned status messages in use; Toast not yet consumed | 🟡 PARTIAL | `TYPE`, `BUILD-WEB`, `BUILD-IOS`, `BUILD-ANDROID` | Toast queue/scope/a11y; Spinner/Skeleton/StateMessage families | — |
-| P17 | Date/time controls | No BeeECOM date picker/calendar workflow yet | ⬜ NOT CHECKED | — | Calendar Web/native + native DatePicker/DateTimePicker contracts | — |
-| P18 | Navigation/content primitives | Current app uses buttons/sections composed locally, not BeeUI Tabs/Breadcrumb/etc. | ⬜ NOT CHECKED | — | Tabs, Breadcrumb, Pagination, ListItem, Stepper, Timeline, Link | — |
-| P19 | Source-ownership CLI / Registry | BeeECOM intentionally validates package model first | ⬜ NOT CHECKED | — | Independent `beeui add` consumer path, registry closure, update/diff/doctor | — |
-| P20 | Human documentation truth | Install, provider, safe-area, theming, Input/Select/Table docs compared against consumer usage | 🚨 MISMATCH | `DOC`, `SOURCE`, consumer evidence | Continue every component row; remove generated stale publication banners and safe-area conflict | [#543](https://github.com/beobungbu/BeeUI/issues/543), [#547](https://github.com/beobungbu/BeeUI/issues/547) |
-| P21 | LLM / agent guidance truth | `llms-components`, `llms-full`, AI cookbook compared to package/runtime behavior | 🚨 MISMATCH | `LLM`, `SOURCE`, consumer evidence | Publication truth + System theme guidance + per-component recommendation parity | [#543](https://github.com/beobungbu/BeeUI/issues/543), [#545](https://github.com/beobungbu/BeeUI/issues/545) |
-| P22 | Full public component-surface coverage | 62 public component modules inventoried below | 🧪 IN PROGRESS | inventory derived from BeeUI public/generated authority | Exercise every relevant family or explicitly mark out-of-scope with rationale | [BeeUI #473](https://github.com/beobungbu/BeeUI/issues/473) |
-
----
-
-# L1 — Public component-family coverage
-
-The 62 rows below are the complete public component-module inventory currently exposed by BeeUI `development`. “Used” means BeeECOM currently imports or exercises that family; it does **not** imply full verification.
-
-## Layout, shell and structure
-
-| Component module | Public family | Used in BeeECOM | Status | Evidence | Main remaining checks | BeeUI issue |
-| --- | --- | ---: | --- | --- | --- | --- |
-| `app-header` | AppHeader | No | ⬜ NOT CHECKED | — | Web/native layout, large text, safe-area composition | — |
-| `bottom-action-bar` | BottomActionBar | No | ⬜ NOT CHECKED | — | Bottom inset ownership, large text, keyboard | — |
-| `box` | Box | Yes | 🟡 PARTIAL | `TYPE`, all builds, `SOURCE` | Explicit RN/Web prop parity, responsive/large-text stress | — |
-| `card` | Card | Yes | 🟡 PARTIAL | `TYPE`, all builds | Variants, pressability if applicable, high-contrast/large text | — |
-| `keyboard-aware-screen` | KeyboardAwareScreen | No | ⬜ NOT CHECKED | — | iOS/Android keyboard avoidance runtime | — |
-| `safe-area` | BeeUIProvider, SafeArea | Yes | 🚨 MISMATCH | `SOURCE`, `DOC`, all builds | Native runtime insets; Web-doc contradiction | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
-| `screen` | Screen | Yes | 🟡 PARTIAL | `TYPE`, all builds, `DOC`, `SOURCE` | Layout/large-text/runtime stress | — |
-| `section` | Section | No | ⬜ NOT CHECKED | — | Responsive/content semantics | — |
-| `separator` | Separator | No | ⬜ NOT CHECKED | — | Semantics, orientation, high contrast | — |
-| `stack` | Stack, HStack, VStack | No | ⬜ NOT CHECKED | — | Responsive wrapping and spacing contracts | — |
-
-## Actions and navigation
-
-| Component module | Public family | Used | Status | Evidence | Main remaining checks | BeeUI issue |
-| --- | --- | ---: | --- | --- | --- | --- |
-| `button` | Button, ButtonLabel | Yes | 🟡 PARTIAL | `TYPE`, all builds, browser interaction | loading/disabled semantics, keyboard, native press/runtime, large text | — |
-| `icon-button` | IconButton | No | ⬜ NOT CHECKED | — | accessible-name requirement, touch target | — |
-| `link` | Link | No | ⬜ NOT CHECKED | — | navigation semantics and external/internal behavior | — |
-| `breadcrumb` | Breadcrumb, BreadcrumbItem | No | ⬜ NOT CHECKED | — | Web semantics, overflow, RTL | — |
-| `pagination` | Pagination, PaginationItem | No | ⬜ NOT CHECKED | — | keyboard, dynamic type, compact viewport | — |
-| `tabs` | Tabs, TabsContent, TabsList, TabsTrigger | No | ⬜ NOT CHECKED | — | controlled state, keyboard, focus, native semantics | — |
-| `stepper` | Stepper, StepperItem | No | ⬜ NOT CHECKED | — | state ownership, accessibility, overflow | — |
-
-## Forms and selection
-
-| Component module | Public family | Used | Status | Evidence | Main remaining checks | BeeUI issue |
-| --- | --- | ---: | --- | --- | --- | --- |
-| `field` | Field | No | ⬜ NOT CHECKED | — | label/description/error association | — |
-| `form-group` | FormGroup | No | ⬜ NOT CHECKED | — | grouped semantics, spacing, large text | — |
-| `form-message` | FormMessage, HelperText | No | ⬜ NOT CHECKED | — | error/status announcements | — |
-| `input` | Input | Yes | 🟡 PARTIAL | `TYPE`, all builds, `DOC`, `SOURCE` | Field composition, invalid/disabled, keyboard, native runtime | — |
-| `textarea` | Textarea | No | ⬜ NOT CHECKED | — | multiline, resize/native keyboard, large text | — |
-| `search-input` | SearchInput | No | ⬜ NOT CHECKED | — | clear/search semantics, keyboard | — |
-| `password-input` | PasswordInput | No | ⬜ NOT CHECKED | — | reveal state, secure entry, accessibility | — |
-| `otp-input` | OTPInput | No | ⬜ NOT CHECKED | — | autofill, paste, focus, screen reader | — |
-| `checkbox` | Checkbox | No | ⬜ NOT CHECKED | — | controlled/uncontrolled, mixed state, native/web a11y | — |
-| `radio` | Radio, RadioGroup | No | ⬜ NOT CHECKED | — | arrow keys, group semantics, native parity | — |
-| `switch` | Switch | No | ⬜ NOT CHECKED | — | controlled state, native semantics, disabled | — |
-| `segmented-control` | SegmentedControl, SegmentedControlItem | No | ⬜ NOT CHECKED | — | keyboard/native semantics, overflow | — |
-| `select` | Select family | Yes | 🟡 PARTIAL | `TYPE`, all builds, `DOC`, `SOURCE` | Web keyboard/typeahead/focus/geometry; iOS/Android runtime | — |
-
-## Overlay, modal and transient UI
-
-| Component module | Public family | Used | Status | Evidence | Main remaining checks | BeeUI issue |
-| --- | --- | ---: | --- | --- | --- | --- |
-| `dialog` | Dialog family | No | ⬜ NOT CHECKED | — | focus trap/restore, Escape/back, native modal semantics | — |
-| `alert-dialog` | AlertDialog family | No | ⬜ NOT CHECKED | — | destructive confirmation semantics/focus | — |
-| `popover` | Popover family | No | ⬜ NOT CHECKED | — | anchored geometry, collision, dismissal | — |
-| `dropdown-menu` | DropdownMenu family | No | ⬜ NOT CHECKED | — | keyboard/typeahead/radio/checkbox menu semantics | — |
-| `sheet` | Sheet family | No | ⬜ NOT CHECKED | — | native gesture providers, snap/dismiss, keyboard/a11y | — |
-| `tooltip` | Tooltip family | No | ⬜ NOT CHECKED | — | hover/focus/long-press, timing, a11y | — |
-| `toast` | useToast | No | ⬜ NOT CHECKED | — | provider scope, queue, action, live announcement, safe area | — |
-
-## Data display, status and content
-
-| Component module | Public family | Used | Status | Evidence | Main remaining checks | BeeUI issue |
-| --- | --- | ---: | --- | --- | --- | --- |
-| `accordion` | Accordion family | No | ⬜ NOT CHECKED | — | keyboard, expanded state, large text | — |
-| `alert-banner` | AlertBanner | No | ⬜ NOT CHECKED | — | status semantics, actions, wrapping | — |
-| `avatar` | Avatar | No | ⬜ NOT CHECKED | — | fallback/image semantics, sizes | — |
-| `badge` | Badge | Yes | 🟡 PARTIAL | `TYPE`, all builds | variants, large text/high contrast | — |
-| `chip` | Chip, ChipGroup | No | ⬜ NOT CHECKED | — | selected/removable/group semantics | — |
-| `collapsible` | Collapsible family | No | ⬜ NOT CHECKED | — | controlled state, focus, animation/reduced motion | — |
-| `description-list` | DescriptionList, DescriptionItem | No | ⬜ NOT CHECKED | — | Web semantics/native accessible grouping | — |
-| `list-group` | ListGroup, ListGroupHeader | No | ⬜ NOT CHECKED | — | grouping, large text | — |
-| `list-item` | ListItem, SettingsItem | No | ⬜ NOT CHECKED | — | press/action semantics, trailing controls | — |
-| `metadata-row` | MetadataRow | No | ⬜ NOT CHECKED | — | wrapping, long content, semantics | — |
-| `progress` | Progress | No | ⬜ NOT CHECKED | — | value semantics, indeterminate, reduced motion | — |
-| `skeleton` | Skeleton | No | ⬜ NOT CHECKED | — | reduced motion, hidden semantics | — |
-| `spinner` | Spinner | No | ⬜ NOT CHECKED | — | busy/status semantics, reduced motion | — |
-| `stat` | Stat family | No | ⬜ NOT CHECKED | — | numeric typography, long labels | — |
-| `state-message` | EmptyState, ErrorState | No | ⬜ NOT CHECKED | — | action semantics, announcements | — |
-| `table` | Table family | Yes | 🚨 MISMATCH | `TYPE`, `BUILD-WEB`, `SOURCE`, `DOC` | `accessibilityLabel → aria-label` Web bridge; stacked/scroll a11y/runtime | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
-| `text` | Text | Yes | 🟡 PARTIAL | `TYPE`, all builds | every variant/tone, dynamic type/zoom, RTL/long strings | — |
-| `timeline` | Timeline family | No | ⬜ NOT CHECKED | — | semantics, wrapping/long content | — |
-| `visually-hidden` | VisuallyHidden | No | ⬜ NOT CHECKED | — | browser + VoiceOver/TalkBack behavior | — |
-
-## Date and time
-
-| Component module | Public family | Used | Status | Evidence | Main remaining checks | BeeUI issue |
-| --- | --- | ---: | --- | --- | --- | --- |
-| `calendar` | Calendar | No | ⬜ NOT CHECKED | — | Web/native navigation, locale, disabled/range constraints | — |
-| `date-picker` | DatePicker | No | ⬜ NOT CHECKED | — | iOS/Android system picker runtime; Web non-support truth | — |
-| `date-time-picker` | DateTimePicker | No | ⬜ NOT CHECKED | — | iOS/Android runtime, Android chained flow | — |
-
-## Theme/runtime helpers
-
-| Component module | Public family | Used | Status | Evidence | Main remaining checks | BeeUI issue |
-| --- | --- | ---: | --- | --- | --- | --- |
-| `theme-scope` | BeeThemeScope | No | ⬜ NOT CHECKED | — | scoped brand/appearance nesting + portal behavior | — |
-| `use-bee-token` | getBeeToken, useBeeToken | No | ⬜ NOT CHECKED | — | global vs scoped reads, runtime override reactivity | — |
+| ID | Capability | Status | Evidence now | Next / gap | BeeUI ref |
+| --- | --- | --- | --- | --- | --- |
+| P01 | npm RC distribution / external package consumption | 🚨 MISMATCH | `PKG TYPE BUILD-WEB BUILD-IOS BUILD-ANDROID DOC LLM` | RC works, but generated docs/LLM still say unpublished | [#543](https://github.com/beobungbu/BeeUI/issues/543) |
+| P02 | React / RN / RN Web compatibility | 🟡 PARTIAL | `TYPE BUILD-WEB BUILD-IOS BUILD-ANDROID` | Runtime parity + dependency drift | — |
+| P03 | Expo SDK 57 consumer compatibility | 🚨 MISMATCH | `PKG BUILD-WEB BUILD-IOS BUILD-ANDROID` | Canonical `@expo/metro-runtime` peer pin drifts | [#544](https://github.com/beobungbu/BeeUI/issues/544) |
+| P04 | Vite + React Native Web integration | ✅ VERIFIED | `SOURCE DOC TYPE BUILD-WEB WEB-RUNTIME` | Recheck on toolchain bump | — |
+| P05 | Application-root provider runtime | 🔧 CONSUMER FIXED | `SOURCE DOC TYPE` + all builds | Keep one root provider; add overlay/Toast runtime evidence | — |
+| P06 | Safe-area ownership | 🚨 MISMATCH | `SOURCE DOC BUILD-IOS BUILD-ANDROID` | Native notch/home-indicator runtime; Web docs disagree | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
+| P07 | Global System / Light / Dark preference | 🚨 MISMATCH | `TYPE` + all builds + `WEB-RUNTIME VISUAL DOC LLM SOURCE` | Native OS-switch runtime; branded System semantics | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
+| P08 | Scoped theme / BeeThemeScope | ⬜ NOT CHECKED | — | Add scoped brand/theme consumer fixture | — |
+| P09 | Semantic tokens / theme CSS | 🟡 PARTIAL | `PKG TYPE SOURCE` + all builds | Full color/type/spacing/motion/runtime-override coverage | — |
+| P10 | Responsive / layout / breakpoints | 🟡 PARTIAL | all builds + partial `RESP` | Formal viewport, zoom, landscape, tablet, large-text matrix | — |
+| P11 | Accessibility system | 🟡 PARTIAL | partial `A11Y WEB-RUNTIME TYPE` | Per-component keyboard/name/state + native assistive tech | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| P12 | Forms / selection | 🟡 PARTIAL | Input + Select: `TYPE SOURCE DOC` + all builds | Validation composition, keyboard, focus, native runtime | — |
+| P13 | Anchored overlays | 🟡 PARTIAL | Select path builds all targets | Geometry/dismiss/typeahead/native runtime; other families unused | — |
+| P14 | Modal overlays / Sheet | ⬜ NOT CHECKED | — | Dialog/AlertDialog/Sheet realistic flows | — |
+| P15 | Data display / Table | 🚨 MISMATCH | `TYPE BUILD-WEB SOURCE DOC` | Web accessibility prop bridge + runtime a11y | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| P16 | Feedback / status / loading | 🟡 PARTIAL | Badge/Card/Text used on all builds | Toast/Spinner/Skeleton/StateMessage | — |
+| P17 | Date/time | ⬜ NOT CHECKED | — | Calendar + native picker flows | — |
+| P18 | Navigation/content primitives | ⬜ NOT CHECKED | — | Tabs/Breadcrumb/Pagination/List/Stepper/Timeline/Link | — |
+| P19 | Source-ownership CLI / Registry | ⬜ NOT CHECKED | — | Independent `beeui add`, doctor, diff, update | — |
+| P20 | Human documentation truth | 🚨 MISMATCH | `DOC SOURCE` + consumer reproduction | Continue component-by-component audit | [#543](https://github.com/beobungbu/BeeUI/issues/543), [#547](https://github.com/beobungbu/BeeUI/issues/547) |
+| P21 | LLM / agent guidance truth | 🚨 MISMATCH | `LLM SOURCE` + consumer reproduction | Publication and System-theme guidance currently drift | [#543](https://github.com/beobungbu/BeeUI/issues/543), [#545](https://github.com/beobungbu/BeeUI/issues/545) |
+| P22 | Full public component surface | 🧪 IN PROGRESS | **62/62 public modules inventoried below** | Exercise every relevant family or explicitly classify out-of-scope | [#473](https://github.com/beobungbu/BeeUI/issues/473) |
 
 ---
 
-# L2 — Contract-level checks for currently exercised surfaces
+# L1 — Complete 62-module public component matrix
 
-This is the “smallest” level: one public family is split into the individual behavior claims BeeECOM must prove.
+“Used” only means BeeECOM currently imports/exercises the family. It does **not** mean fully verified.
+
+## Layout / shell / structure — 10
+
+| # | Module | Public family | Used | Status | Evidence / next | Issue |
+| ---: | --- | --- | ---: | --- | --- | --- |
+| 1 | `app-header` | AppHeader | No | ⬜ | layout + large text + safe area | — |
+| 2 | `bottom-action-bar` | BottomActionBar | No | ⬜ | bottom inset + keyboard + large text | — |
+| 3 | `box` | Box | Yes | 🟡 | `TYPE`, all builds; stress responsive/large text | — |
+| 4 | `card` | Card | Yes | 🟡 | `TYPE`, all builds; variants/high contrast | — |
+| 5 | `keyboard-aware-screen` | KeyboardAwareScreen | No | ⬜ | iOS/Android keyboard runtime | — |
+| 6 | `safe-area` | BeeUIProvider, SafeArea | Yes | 🚨 | source/docs/all builds; native runtime + Web docs conflict | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
+| 7 | `screen` | Screen | Yes | 🟡 | `TYPE SOURCE DOC`, all builds | — |
+| 8 | `section` | Section | No | ⬜ | responsive/content semantics | — |
+| 9 | `separator` | Separator | No | ⬜ | orientation/semantics/high contrast | — |
+| 10 | `stack` | Stack, HStack, VStack | No | ⬜ | wrapping/spacing/responsive | — |
+
+## Actions / navigation — 7
+
+| # | Module | Public family | Used | Status | Evidence / next | Issue |
+| ---: | --- | --- | ---: | --- | --- | --- |
+| 11 | `button` | Button, ButtonLabel | Yes | 🟡 | all builds + browser interaction; loading/disabled/keyboard/native runtime | — |
+| 12 | `icon-button` | IconButton | No | ⬜ | accessible name + touch target | — |
+| 13 | `link` | Link | No | ⬜ | Web/native navigation semantics | — |
+| 14 | `breadcrumb` | Breadcrumb, BreadcrumbItem | No | ⬜ | semantics/overflow/RTL | — |
+| 15 | `pagination` | Pagination, PaginationItem | No | ⬜ | keyboard/dynamic type/compact viewport | — |
+| 16 | `tabs` | Tabs family | No | ⬜ | controlled state/keyboard/focus/native semantics | — |
+| 17 | `stepper` | Stepper, StepperItem | No | ⬜ | state/a11y/overflow | — |
+
+## Forms / selection — 14
+
+| # | Module | Public family | Used | Status | Evidence / next | Issue |
+| ---: | --- | --- | ---: | --- | --- | --- |
+| 18 | `field` | Field | No | ⬜ | label/description/error association | — |
+| 19 | `form-group` | FormGroup | No | ⬜ | grouped semantics/spacing | — |
+| 20 | `form-message` | FormMessage, HelperText | No | ⬜ | error/status announcements | — |
+| 21 | `input` | Input | Yes | 🟡 | `TYPE SOURCE DOC`, all builds; Field + invalid/disabled/runtime | — |
+| 22 | `label` | Label | No | ⬜ | Web/native association + required/disabled composition | — |
+| 23 | `textarea` | Textarea | No | ⬜ | multiline/resize/keyboard/large text | — |
+| 24 | `search-input` | SearchInput | No | ⬜ | clear/search semantics + keyboard | — |
+| 25 | `password-input` | PasswordInput | No | ⬜ | reveal/secure-entry/accessibility | — |
+| 26 | `otp-input` | OTPInput | No | ⬜ | autofill/paste/focus/screen reader | — |
+| 27 | `checkbox` | Checkbox | No | ⬜ | controlled/mixed/native-Web a11y | — |
+| 28 | `radio` | Radio, RadioGroup | No | ⬜ | arrows/group semantics/native parity | — |
+| 29 | `switch` | Switch | No | ⬜ | state/native semantics/disabled | — |
+| 30 | `segmented-control` | SegmentedControl family | No | ⬜ | keyboard/native semantics/overflow | — |
+| 31 | `select` | Select family | Yes | 🟡 | `TYPE SOURCE DOC`, all builds; keyboard/geometry/native runtime | — |
+
+## Overlay / modal / transient — 7
+
+| # | Module | Public family | Used | Status | Evidence / next | Issue |
+| ---: | --- | --- | ---: | --- | --- | --- |
+| 32 | `dialog` | Dialog family | No | ⬜ | trap/restore/Escape/back/native modal | — |
+| 33 | `alert-dialog` | AlertDialog family | No | ⬜ | destructive-confirm semantics/focus | — |
+| 34 | `popover` | Popover family | No | ⬜ | geometry/collision/dismiss | — |
+| 35 | `dropdown-menu` | DropdownMenu family | No | ⬜ | keyboard/typeahead/menu state | — |
+| 36 | `sheet` | Sheet family | No | ⬜ | native gesture providers/snap/dismiss/keyboard/a11y | — |
+| 37 | `tooltip` | Tooltip family | No | ⬜ | hover/focus/long-press/timing/a11y | — |
+| 38 | `toast` | useToast | No | ⬜ | provider scope/queue/action/announcements/safe area | — |
+
+## Data display / status / content — 19
+
+| # | Module | Public family | Used | Status | Evidence / next | Issue |
+| ---: | --- | --- | ---: | --- | --- | --- |
+| 39 | `accordion` | Accordion family | No | ⬜ | keyboard/expanded/large text | — |
+| 40 | `alert-banner` | AlertBanner | No | ⬜ | status semantics/action/wrapping | — |
+| 41 | `avatar` | Avatar | No | ⬜ | fallback/image semantics/sizing | — |
+| 42 | `badge` | Badge | Yes | 🟡 | all builds; variants/large text/high contrast | — |
+| 43 | `chip` | Chip, ChipGroup | No | ⬜ | selected/removable/group semantics | — |
+| 44 | `collapsible` | Collapsible family | No | ⬜ | controlled state/focus/reduced motion | — |
+| 45 | `description-list` | DescriptionList, DescriptionItem | No | ⬜ | Web semantics/native grouping | — |
+| 46 | `list-group` | ListGroup family | No | ⬜ | grouping/large text | — |
+| 47 | `list-item` | ListItem, SettingsItem | No | ⬜ | press semantics/trailing controls | — |
+| 48 | `metadata-row` | MetadataRow | No | ⬜ | wrapping/long content/semantics | — |
+| 49 | `progress` | Progress | No | ⬜ | value/indeterminate/reduced motion | — |
+| 50 | `skeleton` | Skeleton | No | ⬜ | reduced motion/hidden semantics | — |
+| 51 | `spinner` | Spinner | No | ⬜ | busy/status/reduced motion | — |
+| 52 | `stat` | Stat family | No | ⬜ | numeric typography/long labels | — |
+| 53 | `state-message` | EmptyState, ErrorState | No | ⬜ | actions/announcements | — |
+| 54 | `table` | Table family | Yes | 🚨 | `TYPE BUILD-WEB SOURCE DOC`; accessibility bridge/runtime | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| 55 | `text` | Text | Yes | 🟡 | all builds; dynamic type/zoom/RTL/long strings | — |
+| 56 | `timeline` | Timeline family | No | ⬜ | semantics/wrapping | — |
+| 57 | `visually-hidden` | VisuallyHidden | No | ⬜ | browser + VoiceOver/TalkBack | — |
+
+## Date / time — 3
+
+| # | Module | Public family | Used | Status | Evidence / next | Issue |
+| ---: | --- | --- | ---: | --- | --- | --- |
+| 58 | `calendar` | Calendar | No | ⬜ | Web/native nav/locale/disabled dates | — |
+| 59 | `date-picker` | DatePicker | No | ⬜ | iOS/Android system picker runtime + Web non-support truth | — |
+| 60 | `date-time-picker` | DateTimePicker | No | ⬜ | iOS/Android runtime + Android chained flow | — |
+
+## Theme / runtime helpers — 2
+
+| # | Module | Public family | Used | Status | Evidence / next | Issue |
+| ---: | --- | --- | ---: | --- | --- | --- |
+| 61 | `theme-scope` | BeeThemeScope | No | ⬜ | scoped brand/appearance nesting + portals | — |
+| 62 | `use-bee-token` | getBeeToken, useBeeToken | No | ⬜ | global/scoped reads + override reactivity | — |
+
+**Inventory invariant: 10 + 7 + 14 + 7 + 19 + 3 + 2 = 62 public modules.**
+
+---
+
+# L2 — Contract-level matrix for surfaces already exercised
 
 ## Provider / SafeArea
 
-| Contract | Status | Evidence now | Required to reach VERIFIED | Issue |
+| Contract | Status | Evidence | To reach full verification | Issue |
 | --- | --- | --- | --- | --- |
-| Exactly one application-root `BeeUIProvider` | 🔧 CONSUMER FIXED | Source/docs audit + all platform builds | Keep regression assertion in app shell | — |
-| Provider encloses overlay/theme-control consumers | 🔧 CONSUMER FIXED | Source audit + build | Add runtime overlay/Toast use | — |
-| Native top inset has one owner | 🟡 PARTIAL | App composition + build | Notched iOS/Android runtime | — |
-| Native bottom inset has one owner | 🟡 PARTIAL | App composition + build | Home-indicator/navigation-bar runtime | — |
-| Web root SafeArea policy is unambiguous | 🚨 MISMATCH | Two current BeeUI docs contradict | Align docs + executable starter + LLM guidance | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
+| Exactly one root BeeUIProvider | 🔧 CONSUMER FIXED | source/docs audit + all builds | Add regression assertion | — |
+| Provider encloses all BeeUI consumers | 🔧 CONSUMER FIXED | source audit + all builds | Overlay/Toast runtime fixture | — |
+| Native top inset owner | 🟡 | composition + builds | notched iOS/Android runtime | — |
+| Native bottom inset owner | 🟡 | composition + builds | home-indicator/navigation-bar runtime | — |
+| Web root SafeArea policy | 🚨 | current docs contradict | align docs + starter + LLM guidance | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
 
-## Global theming
+## Global theme
 
-| Contract | Status | Evidence now | Required to reach VERIFIED | Issue |
+| Contract | Status | Evidence | To reach full verification | Issue |
 | --- | --- | --- | --- | --- |
-| Explicit Light | ✅ VERIFIED for Web | `TYPE`, builds, Playwright/visual | Native runtime visual evidence | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
-| Explicit Dark | ✅ VERIFIED for Web | `TYPE`, builds, Playwright/visual | Native runtime visual evidence | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
-| Restore to System | ✅ VERIFIED for Web | Browser color-scheme switch after restore | iOS/Android OS-theme toggle runtime | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
-| Preference persistence belongs to app | ✅ VERIFIED | localStorage / AsyncStorage consumer implementation | Keep app-owned; no BeeUI store | — |
-| System + Bee brand | 🟡 PARTIAL | Web runtime, native bundle | Native runtime | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
-| System + Violet/custom brand | ⬜ NOT CHECKED | Source docs show explicit `brand × appearance` registry | Define/document adaptive-brand System contract, then test | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
-| Scoped theme (`BeeThemeScope`) | ⬜ NOT CHECKED | — | Add consumer fixture | — |
-| `useBeeToken` scope reactivity | ⬜ NOT CHECKED | — | Add consumer fixture | — |
+| Light | ✅ Web | `TYPE`, builds, Playwright/visual | native runtime | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
+| Dark | ✅ Web | `TYPE`, builds, Playwright/visual | native runtime | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
+| System restore | ✅ Web | browser color-scheme change after restore | native OS toggle runtime | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
+| Preference persistence app-owned | ✅ | localStorage / AsyncStorage | keep outside BeeUI state authority | — |
+| System + Bee brand | 🟡 | Web runtime + native bundle | native runtime | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
+| System + Violet/custom brand | ⬜ | source docs only | define adaptive-brand contract + consumer runtime test | [#545](https://github.com/beobungbu/BeeUI/issues/545) |
+| BeeThemeScope | ⬜ | — | scoped-theme fixture | — |
+| useBeeToken/getBeeToken | ⬜ | — | scope + runtime-override fixture | — |
 
-## Web package/bundling
+## Web package / bundling
 
-| Contract | Status | Evidence now | Required to reach VERIFIED | Issue |
-| --- | --- | --- | --- | --- |
-| Public npm RC resolves | ✅ VERIFIED | BeeECOM package install/build | Publication docs must stop saying unpublished | [#543](https://github.com/beobungbu/BeeUI/issues/543) |
-| RNW plugin configured | ✅ VERIFIED | BeeECOM Vite config matches canonical example | Version bump revalidation only | — |
-| Tailwind plugin configured | ✅ VERIFIED | build + emitted UI styling | Version bump revalidation only | — |
-| Uniwind plugin configured | ✅ VERIFIED | build + runtime theme tests | Version bump revalidation only | — |
-| `theme.css` imported | ✅ VERIFIED | package CSS consumed in Web | — | — |
-| BeeUI `@source` globs present | ✅ VERIFIED | generated utility classes render | — | — |
-| App-local shared UI `@source` glob present | ✅ VERIFIED | `@beeecom/app-ui/src` scanned | — | — |
-| Web onboarding root composition matches runtime starter | 🚨 MISMATCH | current docs disagree on SafeArea | Fix docs authority | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
+| Contract | Status | Evidence | Issue |
+| --- | --- | --- | --- |
+| npm RC resolves | ✅ runtime / 🚨 guidance | clean consumer install/build | [#543](https://github.com/beobungbu/BeeUI/issues/543) |
+| RNW Vite plugin | ✅ | config matches canonical example + build/runtime | — |
+| Tailwind Vite plugin | ✅ | build/runtime | — |
+| Uniwind Vite plugin | ✅ | build/theme runtime | — |
+| theme.css import | ✅ | package CSS consumed | — |
+| BeeUI `@source` globs | ✅ | classes emitted/rendered | — |
+| BeeECOM shared-UI `@source` | ✅ | app-ui classes emitted | — |
+| Web root composition docs | 🚨 | onboarding vs provider guide conflict | [#547](https://github.com/beobungbu/BeeUI/issues/547) |
 
 ## Input
 
-| Contract | Status | Evidence now | Required to reach VERIFIED | Issue |
-| --- | --- | --- | --- | --- |
-| `value/onChangeText` public API | ✅ VERIFIED | Type/build across targets | — | — |
-| `accessibilityLabel` on RNW/native path | 🟡 PARTIAL | build + Web app usage | Accessibility-tree assertion + native runtime | — |
-| `Field` label/description/error integration | ⬜ NOT CHECKED | Docs/source reviewed only | Add real form validation fixture | — |
-| disabled/invalid/focus semantic styling | ⬜ NOT CHECKED | — | Web/native interaction + a11y | — |
+| Contract | Status | Evidence | Next |
+| --- | --- | --- | --- |
+| value/onChangeText | ✅ | `TYPE` + all builds | — |
+| accessibilityLabel | 🟡 | Web usage + builds | accessibility-tree + native runtime |
+| Field association | ⬜ | docs/source only | real validation form |
+| invalid/disabled/focus | ⬜ | — | Web/native interaction + a11y |
 
-## Select / anchored overlay
+## Select
 
-| Contract | Status | Evidence now | Required to reach VERIFIED | Issue |
-| --- | --- | --- | --- | --- |
-| Controlled `value/onValueChange` | ✅ VERIFIED | Type/build on all targets | — | — |
-| Trigger accessible name | 🟡 PARTIAL | `accessibilityLabel` used | browser accessibility-tree + native runtime | — |
-| Listbox open/select/close | 🟡 PARTIAL | package builds and app composition | explicit browser interaction + iOS/Android runtime | — |
-| Keyboard arrows/typeahead/Escape | ⬜ NOT CHECKED | — | Playwright keyboard suite | — |
-| flip/shift/collision geometry | ⬜ NOT CHECKED | — | constrained viewport tests | — |
-| provider/portal nesting | 🟡 PARTIAL | correct root provider verified | nested modal/overlay runtime | — |
+| Contract | Status | Evidence | Next |
+| --- | --- | --- | --- |
+| controlled value/onValueChange | ✅ | `TYPE` + all builds | — |
+| trigger name | 🟡 | accessibilityLabel used | browser accessibility-tree + native runtime |
+| open/select/close | 🟡 | app composition + builds | explicit browser/native interaction |
+| keyboard/typeahead/Escape | ⬜ | — | Playwright keyboard suite |
+| flip/shift/collision | ⬜ | — | constrained viewport suite |
+| provider/portal nesting | 🟡 | root provider corrected | nested overlay/modal runtime |
 
 ## Table
 
-| Contract | Status | Evidence now | Required to reach VERIFIED | Issue |
+| Contract | Status | Evidence | Next | Issue |
 | --- | --- | --- | --- | --- |
-| Real Web table semantics | 🟡 PARTIAL | source review + production build | Browser DOM/accessibility assertions | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
-| RN-style `accessibilityLabel` maps correctly on Web | 🚨 MISMATCH | source shows plain HTML spread without explicit bridge | BeeUI fix + package-consumer regression test | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
-| Scroll layout | 🟡 PARTIAL | Admin realistic dense inventory | responsive browser test | — |
-| Stacked layout | ⬜ NOT CHECKED | — | compact-width fixture + labels | — |
-| Sort contract | ⬜ NOT CHECKED | — | caller-owned sort state + `aria-sort`/native semantics | — |
-| Selection contract | ⬜ NOT CHECKED | — | caller-owned selected state + a11y | — |
+| real Web table semantics | 🟡 | source + production build | DOM/accessibility assertions | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| RN accessibilityLabel → Web aria-label | 🚨 | source shows plain HTML path without bridge | upstream fix + consumer regression | [#546](https://github.com/beobungbu/BeeUI/issues/546) |
+| scroll layout | 🟡 | realistic admin inventory | responsive browser assertion | — |
+| stacked layout | ⬜ | — | compact-width fixture | — |
+| sort contract | ⬜ | — | caller state + aria-sort/native semantics | — |
+| selection contract | ⬜ | — | caller state + a11y | — |
 
 ---
 
-# L3 — BeeUI issue index discovered by BeeECOM
+# L3 — BeeUI issue index from BeeECOM evidence
 
-| BeeUI issue | Classification | BeeECOM discovery/evidence | Matrix areas |
-| --- | --- | --- | --- |
-| [#543](https://github.com/beobungbu/BeeUI/issues/543) — AI-agent cookbook contradicts current npm RC publication status | Docs + LLM + generated-doc truth drift | Public RC works in BeeECOM while cookbook, `llms*` and generated component banners say unpublished | P01, P20, P21 |
-| [#544](https://github.com/beobungbu/BeeUI/issues/544) — Expo package-consumer starter pins metro-runtime below current Expo 57 peer floor | Compatibility/reference-consumer drift | Clean BeeECOM install exposes unmet peer warning; builds still succeed | P03 |
-| [#545](https://github.com/beobungbu/BeeUI/issues/545) — document System theme preference and restore semantics | Docs/LLM gap | BeeECOM proves `system → light/dark → system` on Web and bundles native | P07, theming L2 |
-| [#546](https://github.com/beobungbu/BeeUI/issues/546) — Table Web RN accessibilityLabel accepted but not mapped to aria-label | Runtime/platform/API accessibility divergence | BeeECOM Table usage compiles, source audit shows plain-HTML path can silently lose semantic mapping | P11, P15, Table L2 |
-| [#547](https://github.com/beobungbu/BeeUI/issues/547) — Web onboarding and provider/safe-area guide contradict root SafeArea policy | Human-doc + agent-guidance contradiction | Two current canonical-looking docs prescribe incompatible Web roots | P06, P20, Web L2 |
-| [#473](https://github.com/beobungbu/BeeUI/issues/473) — full BeeUI public-surface documentation contract | Parent/system coverage | BeeECOM uses this as the upstream umbrella for complete public-surface ownership, not as a substitute for concrete consumer bugs | P22 |
+| Issue | Classification | Matrix areas |
+| --- | --- | --- |
+| [#543](https://github.com/beobungbu/BeeUI/issues/543) | npm publication truth drift across cookbook/LLM/generated docs | P01 P20 P21 |
+| [#544](https://github.com/beobungbu/BeeUI/issues/544) | Expo package-consumer compatibility pin drift | P03 |
+| [#545](https://github.com/beobungbu/BeeUI/issues/545) | System-theme human/LLM guidance gap | P07 + Theme L2 |
+| [#546](https://github.com/beobungbu/BeeUI/issues/546) | Table Web accessibility API/runtime divergence | P11 P15 + Table L2 |
+| [#547](https://github.com/beobungbu/BeeUI/issues/547) | Web SafeArea onboarding contradiction | P06 P20 + Provider/Web L2 |
+| [#473](https://github.com/beobungbu/BeeUI/issues/473) | umbrella public-surface documentation ownership | P22 |
 
 ---
 
 # Update rules
 
-1. **Never mark a family VERIFIED from build/typecheck alone.** Record the evidence class actually obtained.
-2. A cross-platform claim requires separate Web, iOS and Android evidence. Native bundle evidence is not native runtime evidence.
-3. A documentation claim is checked twice: human docs (`DOC`) and machine/agent guidance (`LLM`).
-4. When BeeECOM is wrong and BeeUI docs/source agree, fix BeeECOM and mark `🔧 CONSUMER FIXED`; do not create an upstream issue.
-5. When docs/LLM/type/runtime disagree, create or link a concrete BeeUI issue and mark `🚨 MISMATCH`.
-6. Reuse an existing BeeUI issue when the new evidence has the same root cause; add evidence instead of creating duplicates.
-7. Every BeeECOM PR that newly exercises a BeeUI public family should update this matrix in the same change.
-8. Evidence should point to an exact BeeECOM PR/head/run when available; never use an obsolete green SHA to certify a newer head.
-9. “Out of scope” is allowed only with an explicit rationale; otherwise untested public families stay `⬜ NOT CHECKED`.
-10. A BeeUI release-readiness claim should report both **surface coverage** and **evidence depth**, not only percentage of rows touched.
+1. Build/typecheck alone never makes a cross-platform row VERIFIED.
+2. Web, iOS and Android evidence are separate; native bundle evidence is not native runtime evidence.
+3. Human `DOC` and machine/agent `LLM` guidance are separate evidence classes.
+4. If BeeECOM is wrong and BeeUI docs/source agree, fix BeeECOM and use `🔧 CONSUMER FIXED`; do not file upstream noise.
+5. If docs/LLM/type/runtime disagree, create or reuse a concrete BeeUI issue and use `🚨 MISMATCH`.
+6. Reuse the same BeeUI issue for the same root cause; append evidence rather than create duplicates.
+7. Every BeeECOM PR that newly exercises a BeeUI family must update this matrix.
+8. Evidence should point to an exact PR/head/run when available; an older green SHA never certifies a newer head.
+9. Out-of-scope requires an explicit rationale; otherwise the row remains `⬜ NOT CHECKED`.
+10. Release readiness must report both **surface coverage** and **evidence depth**.
