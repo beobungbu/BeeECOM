@@ -57,7 +57,11 @@ export function App() {
   const [notice, setNotice] = React.useState<string | null>(null);
 
   const refreshChatHistory = React.useCallback(async () => {
-    setMessages(await api.chat.listMessages(THREAD_ID));
+    const [history] = await Promise.all([
+      api.chat.listMessages(THREAD_ID),
+      api.chat.markRead(THREAD_ID, { readerRole: 'customer' }),
+    ]);
+    setMessages(history);
   }, []);
 
   const refresh = React.useCallback(async () => {
@@ -71,6 +75,7 @@ export function App() {
         api.promotions.list(),
         api.chat.listMessages(THREAD_ID),
       ]);
+      await api.chat.markRead(THREAD_ID, { readerRole: 'customer' });
       setProducts(catalog.items);
       setCart(currentCart);
       setCustomer(currentCustomer);
@@ -91,6 +96,10 @@ export function App() {
     const subscription = api.chat.subscribe(THREAD_ID, {
       onEvent(event) {
         setMessages((current) => appendMessage(current, event.message));
+        if (event.message.senderRole === 'support-agent') {
+          void api.chat.markRead(THREAD_ID, { readerRole: 'customer' })
+            .catch((cause) => console.warn('Unable to persist storefront customer read state', cause));
+        }
       },
       onStatus: setChatStatus,
       onResync: refreshChatHistory,
