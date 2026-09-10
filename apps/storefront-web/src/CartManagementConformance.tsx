@@ -273,7 +273,7 @@ export function CartManagementConformance() {
                     </Box>
                   ) : null}
 
-                  <Button onPress={() => navigate('/')}>Continue to checkout</Button>
+                  <Button onPress={() => navigate('/conformance/checkout')}>Continue to checkout</Button>
                 </>
               ) : null}
             </Card>
