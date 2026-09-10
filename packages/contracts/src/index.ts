@@ -6,10 +6,12 @@ import type {
   Customer,
   DemoPersona,
   Order,
+  PaymentMethod,
   Product,
   Promotion,
   ReturnRequest,
   Review,
+  ShippingMethod,
   Wishlist,
 } from '@beeecom/domain';
 
@@ -31,7 +33,13 @@ export interface CartAddLineInput { variantId: string; quantity: number }
 export interface CartUpdateLineInput { quantity: number }
 export interface CartApplyCouponInput { code: string }
 export interface WishlistAddItemInput { productId: string }
-export interface CheckoutInput { cartId: string; addressId: string; paymentScenario?: 'success' | 'failure' | undefined }
+export interface CheckoutInput {
+  cartId: string;
+  addressId: string;
+  shippingMethod?: ShippingMethod | undefined;
+  paymentMethod?: PaymentMethod | undefined;
+  paymentScenario?: 'success' | 'failure' | undefined;
+}
 export interface OrderQuery { customerId?: string | undefined; page?: number | undefined; pageSize?: number | undefined }
 export interface CustomerCancelOrderInput { customerId: string; reason: string }
 export interface CustomerRetryPaymentInput { customerId: string; outcome?: 'success' | 'failure' | undefined }
