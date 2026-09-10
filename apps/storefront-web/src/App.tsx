@@ -347,7 +347,10 @@ export function App() {
                   </Box>
                 ) : null}
 
-                <Button disabled={busy || !customer} onPress={() => void checkout()}>Place order</Button>
+                <Box className="flex-row flex-wrap gap-2">
+                  <Button disabled={busy || !customer} onPress={() => void checkout()}>Place order</Button>
+                  <Button variant="outline" onPress={() => navigate('/conformance/cart')}>Manage cart</Button>
+                </Box>
               </Box>
             ) : (
               <Text variant="body">Your cart is empty. Choose a product to get started.</Text>

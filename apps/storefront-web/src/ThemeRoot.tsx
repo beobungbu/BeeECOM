@@ -9,6 +9,7 @@ import * as React from 'react';
 import { AccountHubConformance } from './AccountHubConformance';
 import { AccountVerificationConformance } from './AccountVerificationConformance';
 import { App } from './App';
+import { CartManagementConformance } from './CartManagementConformance';
 import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
 import { CollectionDiscoveryConformance } from './CollectionDiscoveryConformance';
 import { LayoutActionsConformance } from './LayoutActionsConformance';
@@ -38,6 +39,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/collections') {
     return <CollectionDiscoveryConformance />;
+  }
+  if (window.location.pathname === '/conformance/cart') {
+    return <CartManagementConformance />;
   }
   if (window.location.pathname === '/conformance/orders' || window.location.pathname.startsWith('/conformance/orders/')) {
     return <OrderHistoryConformance />;

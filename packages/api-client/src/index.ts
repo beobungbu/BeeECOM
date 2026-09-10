@@ -9,6 +9,7 @@ import type {
   ApiResponse,
   CartAddLineInput,
   CartApplyCouponInput,
+  CartUpdateLineInput,
   CatalogQuery,
   ChatRealtimeEvent,
   ChatThreadQuery,
@@ -188,6 +189,8 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
     carts: {
       get: (id: string) => request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}`),
       addLine: (id: string, input: CartAddLineInput) => request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}/lines`, { method: 'POST', body: JSON.stringify(input) }),
+      updateLine: (id: string, lineId: string, input: CartUpdateLineInput) => request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}/lines/${encodeURIComponent(lineId)}`, { method: 'PATCH', body: JSON.stringify(input) }),
+      removeLine: (id: string, lineId: string) => request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}/lines/${encodeURIComponent(lineId)}`, { method: 'DELETE' }),
       applyCoupon: (id: string, input: CartApplyCouponInput) => request<Cart>(`/api/v1/cart/${encodeURIComponent(id)}/coupon`, { method: 'PATCH', body: JSON.stringify(input) }),
     },
     wishlist: {

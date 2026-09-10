@@ -28,6 +28,7 @@ export interface CatalogQuery {
   pageSize?: number | undefined;
 }
 export interface CartAddLineInput { variantId: string; quantity: number }
+export interface CartUpdateLineInput { quantity: number }
 export interface CartApplyCouponInput { code: string }
 export interface WishlistAddItemInput { productId: string }
 export interface CheckoutInput { cartId: string; addressId: string; paymentScenario?: 'success' | 'failure' | undefined }
@@ -96,6 +97,8 @@ export interface ApiContractMap {
   'GET /api/v1/catalog/products/:id': { response: Product };
   'GET /api/v1/cart/:id': { response: Cart };
   'POST /api/v1/cart/:id/lines': { body: CartAddLineInput; response: Cart };
+  'PATCH /api/v1/cart/:id/lines/:lineId': { body: CartUpdateLineInput; response: Cart };
+  'DELETE /api/v1/cart/:id/lines/:lineId': { response: Cart };
   'PATCH /api/v1/cart/:id/coupon': { body: CartApplyCouponInput; response: Cart };
   'GET /api/v1/wishlist/:customerId': { response: Wishlist };
   'POST /api/v1/wishlist/:customerId/items': { body: WishlistAddItemInput; response: Wishlist };
