@@ -102,6 +102,7 @@ export interface ApiContractMap {
   'GET /api/v1/orders': { query: OrderQuery; response: Page<Order> };
   'GET /api/v1/orders/:id': { response: Order };
   'GET /api/v1/customers/:id': { response: Customer };
+  'POST /api/v1/reviews': { body: CreateReviewInput; response: Review };
   'GET /api/v1/promotions': { response: Promotion[] };
   'POST /api/v1/returns': { body: CreateReturnInput; response: ReturnRequest };
   'GET /api/v1/chat/threads': { query: ChatThreadQuery; response: Page<ChatThread> };
