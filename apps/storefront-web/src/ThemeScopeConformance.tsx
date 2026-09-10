@@ -25,7 +25,6 @@ function TokenProbe({ id, label }: ProbeProps) {
   const background = useBeeToken('colors.background');
   const primary = useBeeToken('colors.primary');
   const radius = useBeeToken('radius.md');
-  const motion = useBeeToken('motion.normal');
 
   return (
     <Card testID={`${id}-probe`} className="gap-1 p-3">
@@ -33,7 +32,6 @@ function TokenProbe({ id, label }: ProbeProps) {
       <Text testID={`${id}-background`} variant="body">background={background}</Text>
       <Text testID={`${id}-primary`} variant="body">primary={primary}</Text>
       <Text testID={`${id}-radius`} variant="body">radius={radius}</Text>
-      <Text testID={`${id}-motion`} variant="body">motion={motion}</Text>
     </Card>
   );
 }
@@ -111,6 +109,9 @@ export function ThemeScopeConformance() {
           <Text variant="title">BeeThemeScope consumer acceptance</Text>
           <Text variant="body">
             External-package validation for scoped brand/appearance selection, token reads and Web portal context preservation.
+          </Text>
+          <Text variant="caption">
+            Motion token runtime coverage is quarantined under BeeUI #549; color and radius token coverage remains active here.
           </Text>
           <Button
             accessibilityLabel="Toggle Violet scoped appearance"
