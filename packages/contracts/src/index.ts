@@ -33,6 +33,7 @@ export interface CartApplyCouponInput { code: string }
 export interface WishlistAddItemInput { productId: string }
 export interface CheckoutInput { cartId: string; addressId: string; paymentScenario?: 'success' | 'failure' | undefined }
 export interface OrderQuery { customerId?: string | undefined; page?: number | undefined; pageSize?: number | undefined }
+export interface CustomerCancelOrderInput { customerId: string; reason: string }
 export interface ReviewQuery { productId?: string | undefined; customerId?: string | undefined }
 export interface ReturnQuery { customerId?: string | undefined; orderId?: string | undefined }
 export interface ChatThreadQuery { customerId?: string | undefined; status?: 'open' | 'closed' | undefined; page?: number | undefined; pageSize?: number | undefined }
@@ -83,7 +84,7 @@ export function isChatRealtimeEvent(value: unknown): value is ChatRealtimeEvent 
 export interface DemoResetInput { scenario: DemoScenarioName }
 export interface DemoResetResult { scenario: DemoScenarioName; seededAt: string; counts: Record<string, number> }
 export const demoScenarioNames = [
-  'healthy','sale-campaign','low-stock','payment-failed','delayed-shipment','return-approved','vip-customer',
+  'healthy','sale-campaign','low-stock','payment-failed','cancellation-eligible','delayed-shipment','return-approved','vip-customer',
   'empty-catalog','large-catalog','active-chat','unread-chat','chat-reconnect',
 ] as const;
 export type DemoScenarioName = (typeof demoScenarioNames)[number];
@@ -106,6 +107,7 @@ export interface ApiContractMap {
   'POST /api/v1/checkout': { body: CheckoutInput; response: Order };
   'GET /api/v1/orders': { query: OrderQuery; response: Page<Order> };
   'GET /api/v1/orders/:id': { response: Order };
+  'POST /api/v1/orders/:id/cancel': { body: CustomerCancelOrderInput; response: Order };
   'GET /api/v1/customers/:id': { response: Customer };
   'GET /api/v1/reviews': { query: ReviewQuery; response: Review[] };
   'POST /api/v1/reviews': { body: CreateReviewInput; response: Review };
