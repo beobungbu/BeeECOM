@@ -93,7 +93,8 @@ export function ProfileDeliverySettingsConformance() {
     void load();
   }, [load]);
 
-  const profileValid = displayName.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const profileValid = displayName.trim().length > 0 && emailValid;
   const deliveryValid = Boolean(
     delivery
       && delivery.label.trim()
@@ -232,7 +233,7 @@ export function ProfileDeliverySettingsConformance() {
                   <Field label="Full name" required>
                     <Input value={displayName} onChangeText={setDisplayName} placeholder="Full name" />
                   </Field>
-                  <Field label="Email" required invalid={email.length > 0 && !profileValid} error="Enter a valid email address.">
+                  <Field label="Email" required invalid={email.length > 0 && !emailValid} error="Enter a valid email address.">
                     <Input value={email} onChangeText={setEmail} inputMode="email" autoCapitalize="none" placeholder="you@example.com" />
                   </Field>
                   <HStack justify="end" gap="sm" wrap>
