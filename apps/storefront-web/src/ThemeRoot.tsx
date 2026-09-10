@@ -9,6 +9,7 @@ import * as React from 'react';
 import { AccountVerificationConformance } from './AccountVerificationConformance';
 import { App } from './App';
 import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
+import { CollectionDiscoveryConformance } from './CollectionDiscoveryConformance';
 import { LayoutActionsConformance } from './LayoutActionsConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
@@ -30,6 +31,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/account-verification') {
     return <AccountVerificationConformance />;
+  }
+  if (window.location.pathname === '/conformance/collections') {
+    return <CollectionDiscoveryConformance />;
   }
   return <App />;
 }
