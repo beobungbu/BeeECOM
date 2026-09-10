@@ -32,6 +32,7 @@ export interface CartApplyCouponInput { code: string }
 export interface WishlistAddItemInput { productId: string }
 export interface CheckoutInput { cartId: string; addressId: string; paymentScenario?: 'success' | 'failure' | undefined }
 export interface OrderQuery { customerId?: string | undefined; page?: number | undefined; pageSize?: number | undefined }
+export interface ReviewQuery { productId?: string | undefined; customerId?: string | undefined }
 export interface ChatThreadQuery { customerId?: string | undefined; status?: 'open' | 'closed' | undefined; page?: number | undefined; pageSize?: number | undefined }
 export interface CreateChatThreadInput { customerId: string; subject: string; assignedAgentId?: string | undefined }
 export interface MarkChatReadInput { readerRole: 'customer' | 'support-agent' }
@@ -102,6 +103,8 @@ export interface ApiContractMap {
   'GET /api/v1/orders': { query: OrderQuery; response: Page<Order> };
   'GET /api/v1/orders/:id': { response: Order };
   'GET /api/v1/customers/:id': { response: Customer };
+  'GET /api/v1/reviews': { query: ReviewQuery; response: Review[] };
+  'POST /api/v1/reviews': { body: CreateReviewInput; response: Review };
   'GET /api/v1/promotions': { response: Promotion[] };
   'POST /api/v1/returns': { body: CreateReturnInput; response: ReturnRequest };
   'GET /api/v1/chat/threads': { query: ChatThreadQuery; response: Page<ChatThread> };

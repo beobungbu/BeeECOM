@@ -14,11 +14,13 @@ import type {
   ChatThreadQuery,
   CheckoutInput,
   CreateChatThreadInput,
+  CreateReviewInput,
   DemoResetInput,
   DemoResetResult,
   MarkChatReadInput,
   OrderQuery,
   Page,
+  ReviewQuery,
   SendChatMessageInput,
   WishlistAddItemInput,
 } from '@beeecom/contracts';
@@ -79,6 +81,13 @@ function encodeOrderQuery(input: OrderQuery): string {
   if (input.customerId) params.set('customerId', input.customerId);
   if (input.page) params.set('page', String(input.page));
   if (input.pageSize) params.set('pageSize', String(input.pageSize));
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+function encodeReviewQuery(input: ReviewQuery): string {
+  const params = new URLSearchParams();
+  if (input.productId) params.set('productId', input.productId);
+  if (input.customerId) params.set('customerId', input.customerId);
   const query = params.toString();
   return query ? `?${query}` : '';
 }
@@ -183,6 +192,10 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       get: (id: string) => request<Order>(`/api/v1/orders/${encodeURIComponent(id)}`),
     },
     customers: { get: (id: string) => request<Customer>(`/api/v1/customers/${encodeURIComponent(id)}`) },
+    reviews: {
+      list: (query: ReviewQuery = {}) => request<Review[]>(`/api/v1/reviews${encodeReviewQuery(query)}`),
+      create: (input: CreateReviewInput) => request<Review>('/api/v1/reviews', { method: 'POST', body: JSON.stringify(input) }),
+    },
     promotions: { list: () => request<Promotion[]>('/api/v1/promotions') },
     chat: {
       listThreads: (query: ChatThreadQuery = {}) => request<Page<ChatThread>>(`/api/v1/chat/threads${encodeChatThreadQuery(query)}`),
