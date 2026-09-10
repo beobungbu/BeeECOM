@@ -95,7 +95,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
   }, [props.api]);
 
   React.useEffect(() => {
-    void refreshQueues().catch((cause) => props.onError(cause instanceof Error ? cause.message : 'Unable to load Admin queues.'));
+    void refreshQueues().catch((cause) => props.onError(cause instanceof Error ? cause.message : 'Unable to load operations data.'));
   }, [refreshQueues]);
 
   async function run(action: () => Promise<unknown>, success: string, refreshQueuesToo = false) {
@@ -106,7 +106,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
       if (refreshQueuesToo) await refreshQueues();
       props.onNotice(success);
     } catch (cause) {
-      props.onError(cause instanceof Error ? cause.message : 'Admin mutation failed.');
+      props.onError(cause instanceof Error ? cause.message : 'Unable to complete this operation.');
     } finally {
       setBusy(false);
     }
@@ -130,14 +130,14 @@ export function OperationsPanels(props: OperationsPanelsProps) {
       <Card className="gap-4 p-4 md:p-6">
         <Box className="gap-1">
           <Text variant="title">Catalog operations</Text>
-          <Text variant="body">Metadata and inventory changes persist in D1 and are visible to customer surfaces after refresh.</Text>
+          <Text variant="body">Manage product merchandising and stock across customer channels.</Text>
         </Box>
         {productId ? (
           <Select value={productId} onValueChange={chooseProduct}>
             <SelectTrigger accessibilityLabel="Admin product"><SelectValue placeholder="Choose product" /></SelectTrigger>
             <SelectContent>{props.products.map((product) => <SelectItem key={product.id} value={product.id}>{product.title}</SelectItem>)}</SelectContent>
           </Select>
-        ) : <Text variant="body">No products in current scenario.</Text>}
+        ) : <Text variant="body">No products available.</Text>}
 
         {selectedProduct ? (
           <Box className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -147,11 +147,11 @@ export function OperationsPanels(props: OperationsPanelsProps) {
               <Box className="flex-row flex-wrap gap-2">
                 <Button disabled={busy || !productTitle.trim()} onPress={() => void run(
                   () => props.api.admin.products.update(selectedProduct.id, { title: productTitle, featured: selectedProduct.featured }),
-                  'Product metadata persisted.',
+                  'Product title saved.',
                 )}>Save title</Button>
                 <Button variant="outline" disabled={busy} onPress={() => void run(
                   () => props.api.admin.products.update(selectedProduct.id, { featured: !selectedProduct.featured }),
-                  selectedProduct.featured ? 'Product removed from featured merchandising.' : 'Product promoted to featured merchandising.',
+                  selectedProduct.featured ? 'Product removed from featured merchandising.' : 'Product added to featured merchandising.',
                 )}>{selectedProduct.featured ? 'Unfeature' : 'Feature'}</Button>
               </Box>
             </Card>
@@ -172,7 +172,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
                 disabled={busy || !variantId || !Number.isInteger(Number(inventoryAdjustment)) || Number(inventoryAdjustment) === 0 || !inventoryReason.trim()}
                 onPress={() => variantId && void run(
                   () => props.api.admin.products.adjustInventory(selectedProduct.id, { variantId, adjustment: Number(inventoryAdjustment), reason: inventoryReason }),
-                  'Inventory adjustment persisted.',
+                  'Inventory updated.',
                 )}
               >Apply adjustment</Button>
             </Card>
@@ -187,7 +187,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
             <SelectTrigger accessibilityLabel="Promotion campaign"><SelectValue placeholder="Choose promotion" /></SelectTrigger>
             <SelectContent>{props.promotions.map((promotion) => <SelectItem key={promotion.id} value={promotion.id}>{promotion.code} · {promotion.active ? 'active' : 'inactive'}</SelectItem>)}</SelectContent>
           </Select>
-        ) : <Text variant="body">No promotions.</Text>}
+        ) : <Text variant="body">No promotions available.</Text>}
         {selectedPromotion ? (
           <Box className="flex-row flex-wrap items-center gap-3">
             <Badge>{selectedPromotion.active ? 'active' : 'inactive'}</Badge>
@@ -207,7 +207,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
             <SelectTrigger accessibilityLabel="Operations order"><SelectValue placeholder="Choose order" /></SelectTrigger>
             <SelectContent>{props.orders.map((order) => <SelectItem key={order.id} value={order.id}>{order.number} · {order.paymentState} · {order.fulfillmentState}</SelectItem>)}</SelectContent>
           </Select>
-        ) : <Text variant="body">No orders.</Text>}
+        ) : <Text variant="body">No orders available.</Text>}
         {selectedOrder ? (
           <Box className="gap-3">
             <Text variant="title" accessibilityLabel={`Active order ${selectedOrder.number}`}>{selectedOrder.number}</Text>
@@ -220,13 +220,13 @@ export function OperationsPanels(props: OperationsPanelsProps) {
                 <DialogTrigger variant="outline">View order details</DialogTrigger>
                 <DialogContent>
                   <DialogTitle>Order {selectedOrder.number} details</DialogTitle>
-                  <DialogDescription>Inspect the selected order without changing its persisted lifecycle state.</DialogDescription>
+                  <DialogDescription>Review this order without changing its current status.</DialogDescription>
                   <Box className="gap-2">
                     <Text variant="body">Customer: {selectedOrder.customerId}</Text>
                     <Text variant="body">Payment: {selectedOrder.paymentState}</Text>
                     <Text variant="body">Fulfillment: {selectedOrder.fulfillmentState}</Text>
                     <Text variant="body">Total: {formatMoney(selectedOrder.total)}</Text>
-                    <Text variant="body">Lines: {selectedOrder.lines.length}</Text>
+                    <Text variant="body">Items: {selectedOrder.lines.length}</Text>
                   </Box>
                   <DialogFooter><DialogClose>Close details</DialogClose></DialogFooter>
                 </DialogContent>
@@ -242,7 +242,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
                 <AlertDialogContent>
                   <AlertDialogTitle>Refund order {selectedOrder.number}?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This changes the persisted payment state to refunded. The confirmation must be explicit; backdrop and Escape dismissal are intentionally disabled.
+                    The customer payment will be marked as refunded. Confirm only when you are ready to proceed.
                   </AlertDialogDescription>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Keep payment</AlertDialogCancel>
@@ -261,7 +261,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
       <Card className="gap-4 p-4 md:p-6">
         <Box className="flex-row flex-wrap items-center justify-between gap-2">
           <Text variant="title">Customers</Text>
-          <Button variant="outline" disabled={busy} onPress={() => void refreshQueues()}>Refresh operations queues</Button>
+          <Button variant="outline" disabled={busy} onPress={() => void refreshQueues()}>Refresh customers</Button>
         </Box>
         <Table accessibilityLabel="Customer operations table">
           <TableHeader><TableRow><TableHead>Customer</TableHead><TableHead>Email</TableHead><TableHead>Tier</TableHead><TableHead>LTV</TableHead><TableHead>Addresses</TableHead></TableRow></TableHeader>
@@ -269,7 +269,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
             <TableRow key={customer.id}><TableCell>{customer.displayName}</TableCell><TableCell>{customer.email}</TableCell><TableCell>{customer.tier}</TableCell><TableCell>{formatMoney(customer.lifetimeValue)}</TableCell><TableCell>{customer.addresses.length}</TableCell></TableRow>
           ))}</TableBody>
         </Table>
-        {customers.length === 0 ? <Text variant="body">No customers in this scenario.</Text> : null}
+        {customers.length === 0 ? <Text variant="body">No customers found.</Text> : null}
       </Card>
 
       <Card className="gap-4 p-4 md:p-6">
@@ -281,10 +281,10 @@ export function OperationsPanels(props: OperationsPanelsProps) {
             <Box className="flex-row flex-wrap gap-2">
               <Button disabled={busy || item.state !== 'requested'} onPress={() => void run(() => props.api.admin.returns.transition(item.id, { action: 'approve' }), 'Return approved.', true)}>Approve</Button>
               <Button variant="outline" disabled={busy || item.state !== 'requested'} onPress={() => void run(() => props.api.admin.returns.transition(item.id, { action: 'reject' }), 'Return rejected.', true)}>Reject</Button>
-              <Button disabled={busy || item.state !== 'approved'} onPress={() => void run(() => props.api.admin.returns.transition(item.id, { action: 'refund' }), 'Return refunded and related order synchronized.', true)}>Refund</Button>
+              <Button disabled={busy || item.state !== 'approved'} onPress={() => void run(() => props.api.admin.returns.transition(item.id, { action: 'refund' }), 'Return refunded and order payment updated.', true)}>Refund</Button>
             </Box>
           </Card>
-        )) : <Text variant="body">No return requests in this scenario.</Text>}
+        )) : <Text variant="body">No return requests.</Text>}
       </Card>
 
       <Card className="gap-4 p-4 md:p-6">
@@ -298,7 +298,7 @@ export function OperationsPanels(props: OperationsPanelsProps) {
               <Button variant="outline" disabled={busy || review.status === 'rejected'} onPress={() => void run(() => props.api.admin.reviews.moderate(review.id, { status: 'rejected' }), 'Review rejected.', true)}>Reject</Button>
             </Box>
           </Card>
-        )) : <Text variant="body">No reviews in this scenario.</Text>}
+        )) : <Text variant="body">No reviews to moderate.</Text>}
       </Card>
     </Box>
   );
