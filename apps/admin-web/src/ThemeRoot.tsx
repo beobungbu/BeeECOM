@@ -7,6 +7,7 @@ import {
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
+import { CampaignSchedulingConformance } from './CampaignSchedulingConformance';
 import { CatalogFormConformance } from './CatalogFormConformance';
 import { CustomerSegmentationConformance } from './CustomerSegmentationConformance';
 import { InventoryHealthConformance } from './InventoryHealthConformance';
@@ -38,6 +39,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/inventory-health') {
     return <InventoryHealthConformance />;
+  }
+  if (window.location.pathname === '/conformance/campaign-scheduling') {
+    return <CampaignSchedulingConformance />;
   }
   return <App />;
 }
