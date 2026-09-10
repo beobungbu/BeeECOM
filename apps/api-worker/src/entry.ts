@@ -2,6 +2,7 @@ import type { ApiResponse } from '@beeecom/contracts';
 import type { ChatMessage } from '@beeecom/domain';
 
 import { handleAdminLifecycle } from './admin-lifecycle';
+import { handleCartLifecycle } from './cart-lifecycle';
 import { handleCatalogExtra } from './catalog-extra';
 import { handleChatLifecycle } from './chat-lifecycle';
 import coreWorker from './index';
@@ -60,6 +61,8 @@ export default {
 
     const adminResponse = await handleAdminLifecycle(request, env);
     if (adminResponse) return adminResponse;
+    const cartResponse = await handleCartLifecycle(request, env);
+    if (cartResponse) return cartResponse;
     const catalogResponse = await handleCatalogExtra(request, env);
     if (catalogResponse) return catalogResponse;
     const wishlistResponse = await handleWishlistLifecycle(request, env);
