@@ -4,6 +4,7 @@ import type { ChatMessage } from '@beeecom/domain';
 import { handleAdminLifecycle } from './admin-lifecycle';
 import { handleCatalogExtra } from './catalog-extra';
 import { handleChatLifecycle } from './chat-lifecycle';
+import { handleCustomerLifecycle } from './customer-lifecycle';
 import coreWorker from './index';
 import {
   ChatRoom,
@@ -62,6 +63,8 @@ export default {
     if (catalogResponse) return catalogResponse;
     const wishlistResponse = await handleWishlistLifecycle(request, env);
     if (wishlistResponse) return wishlistResponse;
+    const customerResponse = await handleCustomerLifecycle(request, env);
+    if (customerResponse) return customerResponse;
     const lifecycleResponse = await handleChatLifecycle(request, env);
     if (lifecycleResponse) return lifecycleResponse;
 
