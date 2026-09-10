@@ -8,6 +8,7 @@ import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
 import { CatalogFormConformance } from './CatalogFormConformance';
+import { ContentDisclosureConformance } from './ContentDisclosureConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -22,6 +23,9 @@ applyThemePreference(initialPreference);
 function CurrentSurface() {
   if (window.location.pathname === '/conformance/forms') {
     return <CatalogFormConformance />;
+  }
+  if (window.location.pathname === '/conformance/content-disclosure') {
+    return <ContentDisclosureConformance />;
   }
   return <App />;
 }
