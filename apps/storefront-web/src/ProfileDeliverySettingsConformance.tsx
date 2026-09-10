@@ -207,16 +207,16 @@ export function ProfileDeliverySettingsConformance() {
                   title="Profile details"
                   description="Name and contact email"
                   value={customer.email}
+                  leading={panel === 'profile' ? <Badge>Selected</Badge> : undefined}
                   onPress={() => setPanel('profile')}
-                  accessibilityState={{ selected: panel === 'profile' }}
                   testID="settings-profile-item"
                 />
                 <SettingsItem
                   title="Delivery address"
                   description="Default shipping destination"
                   value={delivery?.label ?? 'Not set'}
+                  leading={panel === 'delivery' ? <Badge>Selected</Badge> : undefined}
                   onPress={() => setPanel('delivery')}
-                  accessibilityState={{ selected: panel === 'delivery' }}
                   testID="settings-delivery-item"
                 />
               </ListGroup>
