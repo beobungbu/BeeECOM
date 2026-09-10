@@ -6,6 +6,7 @@ import { handleCartLifecycle } from './cart-lifecycle';
 import { handleCatalogExtra } from './catalog-extra';
 import { handleChatLifecycle } from './chat-lifecycle';
 import coreWorker from './index';
+import { handleOrderLifecycle } from './order-lifecycle';
 import {
   ChatRoom,
   broadcastPersistedChatMessage,
@@ -61,6 +62,8 @@ export default {
 
     const adminResponse = await handleAdminLifecycle(request, env);
     if (adminResponse) return adminResponse;
+    const orderResponse = await handleOrderLifecycle(request, env);
+    if (orderResponse) return orderResponse;
     const cartResponse = await handleCartLifecycle(request, env);
     if (cartResponse) return cartResponse;
     const catalogResponse = await handleCatalogExtra(request, env);
