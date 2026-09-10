@@ -7,6 +7,7 @@ import {
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
+import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
 import { LayoutActionsConformance } from './LayoutActionsConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
@@ -22,6 +23,9 @@ applyThemePreference(initialPreference);
 function CurrentSurface() {
   if (window.location.pathname === '/conformance/layout-actions') {
     return <LayoutActionsConformance />;
+  }
+  if (window.location.pathname === '/conformance/catalog-discovery') {
+    return <CatalogDiscoveryConformance />;
   }
   return <App />;
 }
