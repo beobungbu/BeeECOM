@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, request as playwrightRequest, test } from '@playwright/test';
+import { expect, request as playwrightRequest, test, type Page, type TestInfo } from '@playwright/test';
 
 const API = 'http://127.0.0.1:8787';
 const ADMIN = 'http://127.0.0.1:5174';
@@ -15,8 +15,15 @@ async function resetHealthy() {
   await api.dispose();
 }
 
-async function waitForCampaign(page: import('@playwright/test').Page) {
+async function waitForCampaign(page: Page) {
   await expect(page.getByTestId('campaign-schedule-summary')).toContainText('WELCOME10');
+}
+
+async function attachFullPage(page: Page, testInfo: TestInfo, name: string) {
+  await testInfo.attach(name, {
+    body: await page.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }),
+    contentType: 'image/png',
+  });
 }
 
 async function welcomeCampaign() {
@@ -33,7 +40,7 @@ async function welcomeCampaign() {
   return campaign;
 }
 
-async function setLaunchTime(page: import('@playwright/test').Page, hour: string, minute: string) {
+async function setLaunchTime(page: Page, hour: string, minute: string) {
   const trigger = page.getByTestId('campaign-launch-trigger');
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -54,7 +61,7 @@ async function setLaunchTime(page: import('@playwright/test').Page, hour: string
   await expect(trigger).toBeFocused();
 }
 
-async function setExpiry(page: import('@playwright/test').Page, isoDate: string) {
+async function setExpiry(page: Page, isoDate: string) {
   const trigger = page.getByTestId('campaign-expiry-trigger');
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -103,17 +110,33 @@ test.describe('Campaign scheduling product flow', () => {
     await expect(page.getByTestId('campaign-schedule-summary')).toContainText('Dec 30, 2026 at 23:59 UTC');
   });
 
-  test('campaign scheduling remains usable at 360px with no serious or critical axe findings', async ({ page }) => {
+  test('desktop campaign editor produces visual evidence', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(`${ADMIN}/conformance/campaign-scheduling`);
+    await waitForCampaign(page);
+    await attachFullPage(page, testInfo, 'campaign-scheduling-desktop');
+  });
+
+  test('campaign scheduling and its open picker remain usable at 360px', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await page.goto(`${ADMIN}/conformance/campaign-scheduling`);
     await waitForCampaign(page);
 
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    let overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+
+    const trigger = page.getByTestId('campaign-launch-trigger');
+    await trigger.click();
+    await expect(page.getByTestId('campaign-launch-content')).toBeVisible();
+
+    overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
 
     const violations = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
     expect(violations.violations.filter((item) => ['serious', 'critical'].includes(item.impact ?? ''))).toEqual([]);
+
+    await attachFullPage(page, testInfo, 'campaign-scheduling-mobile-picker-open');
   });
 });
