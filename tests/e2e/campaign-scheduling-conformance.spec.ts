@@ -15,6 +15,10 @@ async function resetHealthy() {
   await api.dispose();
 }
 
+async function waitForCampaign(page: import('@playwright/test').Page) {
+  await expect(page.getByTestId('campaign-schedule-summary')).toContainText('WELCOME10');
+}
+
 async function welcomeCampaign() {
   const api = await playwrightRequest.newContext({ baseURL: API });
   const response = await api.get('/api/v1/promotions');
@@ -67,7 +71,7 @@ test.describe('Campaign scheduling product flow', () => {
   test('DateTimePicker exposes disclosure state, calendar focus and editable 24-hour time', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/campaign-scheduling`);
     await expect(page.getByText('Campaign schedule', { exact: true })).toBeVisible();
-    await expect(page.getByText('WELCOME10', { exact: true })).toBeVisible();
+    await waitForCampaign(page);
 
     const trigger = page.getByTestId('campaign-launch-trigger');
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -77,7 +81,7 @@ test.describe('Campaign scheduling product flow', () => {
 
   test('DatePicker changes the expiry date and restores focus to its trigger', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/campaign-scheduling`);
-    await expect(page.getByText('WELCOME10', { exact: true })).toBeVisible();
+    await waitForCampaign(page);
 
     await setExpiry(page, '2026-12-30');
     await expect(page.getByTestId('campaign-expiry-summary')).toHaveText('Through Dec 30, 2026');
@@ -85,7 +89,7 @@ test.describe('Campaign scheduling product flow', () => {
 
   test('saving the schedule persists launch time and expiry to the canonical promotion', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/campaign-scheduling`);
-    await expect(page.getByText('WELCOME10', { exact: true })).toBeVisible();
+    await waitForCampaign(page);
 
     await setLaunchTime(page, '9', '30');
     await setExpiry(page, '2026-12-30');
@@ -102,7 +106,7 @@ test.describe('Campaign scheduling product flow', () => {
   test('campaign scheduling remains usable at 360px with no serious or critical axe findings', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await page.goto(`${ADMIN}/conformance/campaign-scheduling`);
-    await expect(page.getByText('Campaign schedule', { exact: true })).toBeVisible();
+    await waitForCampaign(page);
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
