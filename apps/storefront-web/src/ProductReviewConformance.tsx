@@ -26,8 +26,6 @@ const api = createBeeEcomClient({
 });
 
 const CUSTOMER_ID = 'cust-ava';
-const ORDER_ID = 'order-1001';
-const PRODUCT_ID = 'prod-field-pack';
 
 type RatingValue = '1' | '2' | '3' | '4' | '5';
 const ratingOptions: Array<{ value: RatingValue; label: string }> = [
@@ -42,6 +40,14 @@ function navigate(path: string) {
   window.location.assign(path);
 }
 
+function reviewContextFromLocation() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    orderId: params.get('orderId')?.trim() ?? '',
+    productId: params.get('productId')?.trim() ?? '',
+  };
+}
+
 function reviewStatusLabel(status: Review['status']): string {
   if (status === 'published') return 'Published';
   if (status === 'rejected') return 'Needs attention';
@@ -49,6 +55,7 @@ function reviewStatusLabel(status: Review['status']): string {
 }
 
 export function ProductReviewConformance() {
+  const [{ orderId, productId }] = React.useState(reviewContextFromLocation);
   const [customer, setCustomer] = React.useState<Customer | null>(null);
   const [order, setOrder] = React.useState<Order | null>(null);
   const [product, setProduct] = React.useState<Product | null>(null);
@@ -64,12 +71,17 @@ export function ProductReviewConformance() {
   const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
+    if (!orderId || !productId) {
+      setError('Choose a purchased product from your order history to write a review.');
+      setLoading(false);
+      return;
+    }
     try {
       const [nextCustomer, nextOrder, nextProduct, reviews] = await Promise.all([
         api.customers.get(CUSTOMER_ID),
-        api.orders.get(ORDER_ID),
-        api.catalog.getProduct(PRODUCT_ID),
-        api.reviews.list({ productId: PRODUCT_ID, customerId: CUSTOMER_ID }),
+        api.orders.get(orderId),
+        api.catalog.getProduct(productId),
+        api.reviews.list({ productId, customerId: CUSTOMER_ID }),
       ]);
       setCustomer(nextCustomer);
       setOrder(nextOrder);
@@ -80,7 +92,7 @@ export function ProductReviewConformance() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [orderId, productId]);
 
   React.useEffect(() => {
     void load();
@@ -119,13 +131,15 @@ export function ProductReviewConformance() {
     }
   }
 
+  const backPath = orderId ? `/conformance/orders/${encodeURIComponent(orderId)}` : '/conformance/orders';
+
   return (
     <Screen>
       <AppHeader
         title="Review your purchase"
         description="Share feedback to help other shoppers make a confident choice."
         leading={(
-          <IconButton accessibilityLabel="Back to order" variant="ghost" onPress={() => navigate(`/conformance/orders/${ORDER_ID}`)}>
+          <IconButton accessibilityLabel="Back to order" variant="ghost" onPress={() => navigate(backPath)}>
             <Text aria-hidden variant="heading">‹</Text>
           </IconButton>
         )}
@@ -176,6 +190,9 @@ export function ProductReviewConformance() {
                   <Text variant="heading">{review.title}</Text>
                   <Text variant="body">{review.body}</Text>
                 </VStack>
+                <Box className="self-start">
+                  <Button variant="outline" onPress={() => navigate(backPath)}>Back to order</Button>
+                </Box>
               </Card>
             ) : (
               <Card className="gap-5 p-5 md:p-6" testID="product-review-form">
@@ -184,11 +201,7 @@ export function ProductReviewConformance() {
                   <Text variant="body">Tell us what worked well and what other shoppers should know.</Text>
                 </VStack>
 
-                <FormGroup
-                  legend="Rating"
-                  description="Choose one to five stars."
-                  required
-                >
+                <FormGroup legend="Rating" description="Choose one to five stars." required>
                   <RadioGroup value={rating} onValueChange={(value) => setRating(value as RatingValue)}>
                     {ratingOptions.map((option) => (
                       <Radio key={option.value} value={option.value} label={option.label} />
@@ -217,7 +230,7 @@ export function ProductReviewConformance() {
                 </Field>
 
                 <HStack justify="end" gap="sm" wrap>
-                  <Button variant="outline" disabled={busy} onPress={() => navigate(`/conformance/orders/${ORDER_ID}`)}>Cancel</Button>
+                  <Button variant="outline" disabled={busy} onPress={() => navigate(backPath)}>Cancel</Button>
                   <Button disabled={busy} onPress={() => void submitReview()}>{busy ? 'Submitting…' : 'Submit review'}</Button>
                 </HStack>
               </Card>
