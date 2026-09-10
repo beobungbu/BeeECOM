@@ -71,11 +71,12 @@ export function App() {
     setLoading(true);
     setError(null);
     try {
-      const [catalog, currentCart, currentCustomer, promoList, chatHistory] = await Promise.all([
+      const [catalog, currentCart, currentCustomer, promoList, orderPage, chatHistory] = await Promise.all([
         api.catalog.listProducts({ sort: 'featured', pageSize: 12 }),
         api.carts.get(CART_ID),
         api.customers.get(CUSTOMER_ID),
         api.promotions.list(),
+        api.orders.list({ customerId: CUSTOMER_ID, pageSize: 1 }),
         api.chat.listMessages(THREAD_ID),
       ]);
       await api.chat.markRead(THREAD_ID, { readerRole: 'customer' });
@@ -83,6 +84,7 @@ export function App() {
       setCart(currentCart);
       setCustomer(currentCustomer);
       setPromotions(promoList);
+      setLastOrder(orderPage.items[0] ?? null);
       setMessages(chatHistory);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to load the shop.');
@@ -153,24 +155,6 @@ export function App() {
       setNotice(updated.couponCode ? `Coupon ${updated.couponCode} applied.` : 'Coupon removed.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Coupon could not be applied.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function checkout() {
-    const address = customer?.addresses.find((item) => item.isDefault) ?? customer?.addresses[0];
-    if (!cart || !address || cart.lines.length === 0) return;
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const order = await api.checkout({ cartId: cart.id, addressId: address.id });
-      setLastOrder(order);
-      setCart(await api.carts.get(CART_ID));
-      setNotice(order.paymentState === 'paid' ? `Order ${order.number} placed.` : `We couldn't complete payment for order ${order.number}.`);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Checkout failed.');
     } finally {
       setBusy(false);
     }
@@ -348,7 +332,14 @@ export function App() {
                 ) : null}
 
                 <Box className="flex-row flex-wrap gap-2">
-                  <Button disabled={busy || !customer} onPress={() => void checkout()}>Place order</Button>
+                  <Button
+                    accessibilityLabel="Continue to checkout"
+                    disabled={busy || !customer}
+                    onPress={() => navigate('/conformance/checkout')}
+                    testID="storefront-checkout"
+                  >
+                    Checkout
+                  </Button>
                   <Button variant="outline" onPress={() => navigate('/conformance/cart')}>Manage cart</Button>
                 </Box>
               </Box>
@@ -357,7 +348,7 @@ export function App() {
             )}
           </Card>
 
-          <Card className="gap-4 p-5 md:p-6">
+          <Card className="gap-4 p-5 md:p-6" testID="storefront-latest-order">
             <Box className="gap-1">
               <Text variant="title">Latest order</Text>
               <Text variant="body">Track the most recent order placed from your cart.</Text>
@@ -369,9 +360,17 @@ export function App() {
                 <Text variant="body">Fulfillment: {lastOrder.fulfillmentState}</Text>
                 <Text variant="body">Items: {lastOrder.lines.length}</Text>
                 <Text variant="body">Total: {formatMoney(lastOrder.total)}</Text>
+                <Box className="items-start">
+                  <Button
+                    variant="outline"
+                    onPress={() => navigate(`/conformance/orders/${encodeURIComponent(lastOrder.id)}`)}
+                  >
+                    View order
+                  </Button>
+                </Box>
               </Box>
             ) : (
-              <Text variant="body">Your next completed order will appear here.</Text>
+              <Text variant="body">Your next order will appear here.</Text>
             )}
           </Card>
         </Box>

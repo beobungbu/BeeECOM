@@ -211,8 +211,12 @@ test.describe('Golden customer → Admin → support journey', () => {
     await expect(customerPage.getByText(/added to cart/i)).toBeVisible();
     await customerPage.getByRole('button', { name: 'Apply coupon' }).click();
     await expect(customerPage.getByText(/Coupon WELCOME10 applied/i)).toBeVisible();
+
+    await customerPage.getByTestId('storefront-checkout').click();
+    await expect(customerPage).toHaveURL(`${STOREFRONT}/conformance/checkout`);
+    await customerPage.getByRole('checkbox', { name: 'I confirm my delivery, payment and order details' }).click();
     await customerPage.getByRole('button', { name: 'Place order' }).click();
-    await expect(customerPage.getByText(/Order .* placed\./)).toBeVisible();
+    await expect(customerPage.getByTestId('checkout-success')).toBeVisible();
 
     const api = await playwrightRequest.newContext({ baseURL: API });
     const orders = await api.get('/api/v1/orders?customerId=cust-ava&pageSize=100');
@@ -222,6 +226,9 @@ test.describe('Golden customer → Admin → support journey', () => {
 
     await adminPage.getByRole('button', { name: 'Refresh dashboard' }).click();
     await expect(adminPage.getByLabel(`Active order ${latestOrderNumber!}`)).toBeVisible();
+
+    await customerPage.goto(STOREFRONT);
+    await expect(customerPage.getByTestId('storefront-latest-order')).toContainText(latestOrderNumber!);
 
     const customerMessage = `Realtime customer QA ${Date.now()}`;
     await customerPage.getByLabel('Support message').fill(customerMessage);
