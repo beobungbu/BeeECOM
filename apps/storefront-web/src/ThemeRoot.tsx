@@ -6,6 +6,7 @@ import {
 } from '@beeecom/app-ui';
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
+import { AccountHubConformance } from './AccountHubConformance';
 import { AccountVerificationConformance } from './AccountVerificationConformance';
 import { App } from './App';
 import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
@@ -38,6 +39,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/orders' || window.location.pathname.startsWith('/conformance/orders/')) {
     return <OrderHistoryConformance />;
+  }
+  if (window.location.pathname === '/conformance/account') {
+    return <AccountHubConformance />;
   }
   return <App />;
 }
