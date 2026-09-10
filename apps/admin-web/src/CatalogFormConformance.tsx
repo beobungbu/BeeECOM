@@ -43,8 +43,8 @@ export function CatalogFormConformance() {
   const loadProduct = React.useCallback(async () => {
     setError(null);
     try {
-      const products = await api.products.list();
-      const first = products[0] ?? null;
+      const page = await api.catalog.listProducts({ pageSize: 24, sort: 'featured' });
+      const first = page.items[0] ?? null;
       setProduct(first);
       setTitle(first?.title ?? '');
       setDescription(first?.description ?? '');
