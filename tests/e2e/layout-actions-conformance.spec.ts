@@ -51,8 +51,9 @@ test.describe('BeeUI layout and action composition in a real product detail flow
     await expect(page.getByRole('heading', { name: 'Product details' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Selected variant' })).toBeVisible();
     await expect(page.getByRole('separator')).toHaveCount(1);
-    await expect(page.getByTestId('product-bottom-action-bar')).toBeVisible();
-    await expect(page.getByText('Black / S')).toBeVisible();
+    const actionBar = page.getByTestId('product-bottom-action-bar');
+    await expect(actionBar).toBeVisible();
+    await expect(actionBar.getByText('Black / S')).toBeVisible();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
