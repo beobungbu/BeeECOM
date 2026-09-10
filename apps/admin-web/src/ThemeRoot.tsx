@@ -9,6 +9,7 @@ import * as React from 'react';
 import { App } from './App';
 import { CatalogFormConformance } from './CatalogFormConformance';
 import { CustomerSegmentationConformance } from './CustomerSegmentationConformance';
+import { InventoryHealthConformance } from './InventoryHealthConformance';
 import { ReturnOperationsConformance } from './ReturnOperationsConformance';
 import { ReviewIdentityConformance } from './ReviewIdentityConformance';
 
@@ -34,6 +35,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/return-operations') {
     return <ReturnOperationsConformance />;
+  }
+  if (window.location.pathname === '/conformance/inventory-health') {
+    return <InventoryHealthConformance />;
   }
   return <App />;
 }
