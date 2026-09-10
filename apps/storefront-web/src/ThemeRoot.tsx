@@ -48,7 +48,7 @@ function CurrentSurface() {
 
 export function ThemeRoot() {
   const [preference, setPreference] = React.useState<ThemePreference>(initialPreference);
-  const showThemeHarness = window.location.pathname === '/';
+  const showThemeHarness = window.location.pathname === '/conformance/theme-preference';
 
   const changePreference = React.useCallback((next: ThemePreference) => {
     applyThemePreference(next);

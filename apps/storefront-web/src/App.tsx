@@ -37,6 +37,10 @@ function appendMessage(messages: ChatMessage[], message: ChatMessage): ChatMessa
   return messages.some((item) => item.id === message.id) ? messages : [...messages, message];
 }
 
+function navigate(path: string) {
+  window.location.assign(path);
+}
+
 export function App() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [selected, setSelected] = React.useState<Product | null>(null);
@@ -81,7 +85,7 @@ export function App() {
       setPromotions(promoList);
       setMessages(chatHistory);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to load the storefront.');
+      setError(cause instanceof Error ? cause.message : 'Unable to load the shop.');
     } finally {
       setLoading(false);
     }
@@ -121,6 +125,7 @@ export function App() {
     ? promotions.find((promotion) => promotion.active && promotion.code === cart.couponCode)
     : undefined;
   const totals = cart && cart.lines.length > 0 ? calculateCartTotals(cart, appliedPromotion) : null;
+  const chatStatusLabel = chatStatus === 'connected' ? 'Online' : chatStatus === 'closed' ? 'Offline' : 'Connecting…';
 
   async function addToCart() {
     if (!selectedVariant || selectedVariant.inventoryQuantity <= 0) return;
@@ -163,7 +168,7 @@ export function App() {
       const order = await api.checkout({ cartId: cart.id, addressId: address.id });
       setLastOrder(order);
       setCart(await api.carts.get(CART_ID));
-      setNotice(order.paymentState === 'paid' ? `Order ${order.number} placed.` : `Order ${order.number} created with failed payment.`);
+      setNotice(order.paymentState === 'paid' ? `Order ${order.number} placed.` : `We couldn't complete payment for order ${order.number}.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Checkout failed.');
     } finally {
@@ -186,7 +191,7 @@ export function App() {
       });
       setMessages((current) => appendMessage(current, message));
       setChatDraft('');
-      setNotice('Message persisted to D1 and published to connected support agents.');
+      setNotice('Message sent to support.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Support message failed.');
     } finally {
@@ -197,17 +202,19 @@ export function App() {
   return (
     <Screen>
       <Box className="mx-auto w-full max-w-screen-xl gap-8 p-4 md:p-8">
-        <Box className="gap-3 py-8 md:py-12">
-          <Box className="flex-row flex-wrap items-center gap-3">
+        <Box className="gap-4 py-8 md:py-12">
+          <Box className="max-w-3xl gap-2">
             <Text variant="title">BeeECOM</Text>
-            <Badge>BeeUI 0.86.2-rc.1</Badge>
+            <Text variant="body">
+              Everyday essentials for work, travel and the moments in between.
+            </Text>
           </Box>
-          <Text variant="body">
-            Golden commerce slice: browse → PDP → cart → coupon → checkout → shared Admin order → persistent support chat.
-          </Text>
           <Box className="flex-row flex-wrap gap-3">
-            <Button onPress={() => void refresh()}>Refresh server state</Button>
-            <Button variant="outline" onPress={() => setSelected(null)}>Close PDP</Button>
+            <Button onPress={() => navigate('/conformance/collections')}>Shop collections</Button>
+            <Button variant="outline" onPress={() => navigate('/conformance/account')}>My account</Button>
+            {selected ? (
+              <Button variant="ghost" onPress={() => setSelected(null)}>Close product details</Button>
+            ) : null}
           </Box>
         </Box>
 
@@ -219,23 +226,23 @@ export function App() {
 
         {loading ? (
           <Card className="gap-2 p-6">
-            <Text variant="title">Loading storefront…</Text>
-            <Text variant="body">Fetching catalog, cart, customer, promotions and chat from the shared Worker API.</Text>
+            <Text variant="title">Loading shop…</Text>
+            <Text variant="body">Getting your products, cart and account ready.</Text>
           </Card>
         ) : null}
 
         {error ? (
           <Card className="gap-3 p-6">
-            <Text variant="title">Request failed</Text>
+            <Text variant="title">Something went wrong</Text>
             <Text variant="body">{error}</Text>
-            <Button onPress={() => void refresh()}>Reload state</Button>
+            <Button onPress={() => void refresh()}>Try again</Button>
           </Card>
         ) : null}
 
         {!loading && products.length === 0 ? (
           <Card className="gap-2 p-6">
             <Text variant="title">No products</Text>
-            <Text variant="body">This state is reproducible with the named `empty-catalog` demo scenario.</Text>
+            <Text variant="body">New arrivals will appear here as soon as they are available.</Text>
           </Card>
         ) : null}
 
@@ -243,7 +250,7 @@ export function App() {
           <Box className="gap-4">
             <Box className="gap-1">
               <Text variant="title">Catalog</Text>
-              <Text variant="body">Every product and variant comes from D1-backed deterministic fixtures.</Text>
+              <Text variant="body">Explore featured products, colors and sizes selected for the current collection.</Text>
             </Box>
             <ProductGrid products={products} onProductPress={chooseProduct} />
           </Box>
@@ -304,7 +311,7 @@ export function App() {
           <Card className="gap-4 p-5 md:p-6">
             <Box className="gap-1">
               <Text variant="title">Cart</Text>
-              <Text variant="body">Cart ID {CART_ID}; mutations persist in D1.</Text>
+              <Text variant="body">{cart?.lines.length ?? 0} item{cart?.lines.length === 1 ? '' : 's'} ready for checkout.</Text>
             </Box>
             {cart?.lines.length ? (
               <Box className="gap-3">
@@ -340,28 +347,28 @@ export function App() {
                   </Box>
                 ) : null}
 
-                <Button disabled={busy || !customer} onPress={() => void checkout()}>Simulate checkout</Button>
+                <Button disabled={busy || !customer} onPress={() => void checkout()}>Place order</Button>
               </Box>
             ) : (
-              <Text variant="body">Cart is empty. Add a product above.</Text>
+              <Text variant="body">Your cart is empty. Choose a product to get started.</Text>
             )}
           </Card>
 
           <Card className="gap-4 p-5 md:p-6">
             <Box className="gap-1">
               <Text variant="title">Latest order</Text>
-              <Text variant="body">The same order is immediately queryable by Admin.</Text>
+              <Text variant="body">Track the most recent order placed from your cart.</Text>
             </Box>
             {lastOrder ? (
               <Box className="gap-2">
                 <Text variant="title">{lastOrder.number}</Text>
                 <Text variant="body">Payment: {lastOrder.paymentState}</Text>
                 <Text variant="body">Fulfillment: {lastOrder.fulfillmentState}</Text>
-                <Text variant="body">Lines: {lastOrder.lines.length}</Text>
+                <Text variant="body">Items: {lastOrder.lines.length}</Text>
                 <Text variant="body">Total: {formatMoney(lastOrder.total)}</Text>
               </Box>
             ) : (
-              <Text variant="body">Complete checkout to create a new order.</Text>
+              <Text variant="body">Your next completed order will appear here.</Text>
             )}
           </Card>
         </Box>
@@ -370,9 +377,9 @@ export function App() {
           <Box className="gap-1">
             <Box className="flex-row flex-wrap items-center gap-2">
               <Text variant="title">Support chat</Text>
-              <Badge>{chatStatus}</Badge>
+              <Badge>{chatStatusLabel}</Badge>
             </Box>
-            <Text variant="body">D1 is canonical history; Durable Objects fan out persisted messages and reconnect resyncs D1.</Text>
+            <Text variant="body">Need help with an order? Send us a message and our support team will reply here.</Text>
           </Box>
           <Box className="gap-2">
             {messages.map((message) => (

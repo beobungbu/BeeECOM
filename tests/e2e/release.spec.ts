@@ -211,7 +211,7 @@ test.describe('Golden customer → Admin → support journey', () => {
     await expect(customerPage.getByText(/added to cart/i)).toBeVisible();
     await customerPage.getByRole('button', { name: 'Apply coupon' }).click();
     await expect(customerPage.getByText(/Coupon WELCOME10 applied/i)).toBeVisible();
-    await customerPage.getByRole('button', { name: 'Simulate checkout' }).click();
+    await customerPage.getByRole('button', { name: 'Place order' }).click();
     await expect(customerPage.getByText(/Order .* placed\./)).toBeVisible();
 
     const api = await playwrightRequest.newContext({ baseURL: API });
@@ -220,7 +220,7 @@ test.describe('Golden customer → Admin → support journey', () => {
     const latestOrderNumber = payload.data.items[0]?.number;
     expect(latestOrderNumber).toBeTruthy();
 
-    await adminPage.getByRole('button', { name: 'Refresh canonical state' }).click();
+    await adminPage.getByRole('button', { name: 'Refresh dashboard' }).click();
     await expect(adminPage.getByLabel(`Active order ${latestOrderNumber!}`)).toBeVisible();
 
     const customerMessage = `Realtime customer QA ${Date.now()}`;
@@ -246,11 +246,12 @@ test.describe('Keyboard, responsive and accessibility release smoke', () => {
   test('storefront keyboard traversal reaches and activates the featured CTA', async ({ page }) => {
     await page.goto(STOREFRONT);
     await expect(page.getByText('Catalog')).toBeVisible();
+    await expect(page.getByText(/^Theme preference:/)).toHaveCount(0);
 
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Refresh server state' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Shop collections' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Close PDP' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'My account' })).toBeFocused();
 
     const featuredCta = page.getByRole('button', { name: 'Shop featured Cloud Tee' });
     let reachedFeatured = false;
@@ -267,12 +268,13 @@ test.describe('Keyboard, responsive and accessibility release smoke', () => {
     await expect(page.getByLabel('Product variant')).toBeVisible();
   });
 
-  test('Admin starts keyboard traversal at the canonical refresh control', async ({ page }) => {
+  test('Admin starts keyboard traversal at the dashboard refresh control', async ({ page }) => {
     await page.goto(ADMIN);
     await expect(page.getByText('BeeECOM Admin')).toBeVisible();
+    await expect(page.getByText(/^Theme preference:/)).toHaveCount(0);
 
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Refresh canonical state' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Refresh dashboard' })).toBeFocused();
   });
 
   test('storefront stays within a 360px phone viewport and has no serious/critical axe violations', async ({ page }) => {

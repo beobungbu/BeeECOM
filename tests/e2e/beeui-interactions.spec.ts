@@ -63,7 +63,7 @@ test.describe('BeeUI external-consumer interaction contracts', () => {
 
   test('Table renders real HTML table/header/body semantics for dense Admin data', async ({ page }) => {
     await page.goto(ADMIN);
-    await expect(page.getByText('Dense inventory view')).toBeVisible();
+    await expect(page.getByText('Inventory', { exact: true })).toBeVisible();
 
     const tables = page.locator('table');
     expect(await tables.count()).toBeGreaterThanOrEqual(2);
