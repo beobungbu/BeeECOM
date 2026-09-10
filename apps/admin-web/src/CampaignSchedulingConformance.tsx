@@ -135,8 +135,8 @@ export function CampaignSchedulingConformance() {
   return (
     <Screen>
       <Box className="mx-auto w-full max-w-5xl gap-6 p-4 md:p-8">
-        <Box className="flex-row flex-wrap items-end justify-between gap-4 py-2 md:py-4">
-          <Box className="max-w-2xl gap-2">
+        <Box className="gap-4 py-2 md:flex-row md:flex-wrap md:items-end md:justify-between md:py-4">
+          <Box className="min-w-0 w-full gap-2 md:max-w-2xl md:flex-1">
             <Text variant="title">Campaign schedule</Text>
             <Text variant="body">
               Choose when the offer goes live and when customers can no longer redeem it.
