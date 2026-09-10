@@ -5,7 +5,9 @@ const API = 'http://127.0.0.1:8787';
 const STOREFRONT = 'http://127.0.0.1:5173';
 const RESET_TOKEN = 'qa-reset-token';
 const CUSTOMER_ID = 'cust-ava';
+const ORDER_ID = 'order-1001';
 const PRODUCT_ID = 'prod-field-pack';
+const REVIEW_PATH = `/conformance/product-review?orderId=${ORDER_ID}&productId=${PRODUCT_ID}`;
 
 async function resetHealthy() {
   const api = await playwrightRequest.newContext({ baseURL: API });
@@ -37,6 +39,15 @@ async function adminReviews() {
   return body.data;
 }
 
+async function publicProductReviews() {
+  const api = await playwrightRequest.newContext({ baseURL: API });
+  const response = await api.get(`/api/v1/reviews?productId=${PRODUCT_ID}`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as { ok: true; data: Array<{ productId: string; status: string }> };
+  await api.dispose();
+  return body.data;
+}
+
 async function attachFullPage(page: Page, testInfo: TestInfo, name: string) {
   await testInfo.attach(name, {
     body: await page.screenshot({ fullPage: true, animations: 'disabled', caret: 'hide' }),
@@ -49,8 +60,12 @@ test.describe('Customer product review submission', () => {
     await resetHealthy();
   });
 
-  test('verified purchaser submits a pending review that persists across reload and is visible to Admin', async ({ page }) => {
-    await page.goto(`${STOREFRONT}/conformance/product-review`);
+  test('verified purchaser enters from order detail and submits a pending review that persists', async ({ page }) => {
+    await page.goto(`${STOREFRONT}/conformance/orders/${ORDER_ID}`);
+    await expect(page.getByTestId('order-detail-items')).toContainText('Field Pack');
+    await page.getByRole('button', { name: 'Review Field Pack' }).click();
+    await expect(page).toHaveURL(`${STOREFRONT}${REVIEW_PATH}`);
+
     await expect(page.getByRole('heading', { name: 'Review your purchase' })).toBeVisible();
     await expect(page.getByTestId('review-purchase-summary')).toContainText('Field Pack');
     await expect(page.getByTestId('review-purchase-summary')).toContainText('Order #1001');
@@ -84,6 +99,9 @@ test.describe('Customer product review submission', () => {
       body: 'Compact, comfortable, and easy to organize for a full day out.',
       status: 'pending',
     });
+
+    // Pending moderation content must not leak into the public product review feed.
+    expect((await publicProductReviews()).filter((review) => review.productId === PRODUCT_ID)).toHaveLength(0);
 
     await page.reload();
     await expect(page.getByTestId('submitted-review')).toContainText('Perfect daily carry');
@@ -144,7 +162,7 @@ test.describe('Customer product review submission', () => {
 
   test('review form reflows at 390px, passes serious/critical axe and produces visual evidence', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(`${STOREFRONT}/conformance/product-review`);
+    await page.goto(`${STOREFRONT}${REVIEW_PATH}`);
     await expect(page.getByTestId('product-review-form')).toBeVisible();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -159,7 +177,7 @@ test.describe('Customer product review submission', () => {
 
   test('desktop review form produces product-quality visual evidence', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto(`${STOREFRONT}/conformance/product-review`);
+    await page.goto(`${STOREFRONT}${REVIEW_PATH}`);
     await expect(page.getByTestId('product-review-form')).toBeVisible();
     await attachFullPage(page, testInfo, 'product-review-desktop');
   });
