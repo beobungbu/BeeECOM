@@ -13,6 +13,7 @@ import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
 import { CollectionDiscoveryConformance } from './CollectionDiscoveryConformance';
 import { LayoutActionsConformance } from './LayoutActionsConformance';
 import { OrderHistoryConformance } from './OrderHistoryConformance';
+import { ProductReviewConformance } from './ProductReviewConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -42,6 +43,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/account') {
     return <AccountHubConformance />;
+  }
+  if (window.location.pathname === '/conformance/product-review') {
+    return <ProductReviewConformance />;
   }
   return <App />;
 }
