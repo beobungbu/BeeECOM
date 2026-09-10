@@ -1,4 +1,9 @@
-import type { ApiFailure, ApiSuccess, CustomerCancelOrderInput } from '@beeecom/contracts';
+import type {
+  ApiFailure,
+  ApiSuccess,
+  CustomerCancelOrderInput,
+  CustomerRetryPaymentInput,
+} from '@beeecom/contracts';
 import type { Customer, Order } from '@beeecom/domain';
 
 interface D1Result<T = unknown> { results: T[]; success: boolean }
@@ -52,6 +57,24 @@ async function rowById<T>(env: OrderLifecycleEnv, table: string, id: string): Pr
   return row ? parse<T>(row.data_json) : null;
 }
 
+async function loadOwnedOrder(
+  request: Request,
+  env: OrderLifecycleEnv,
+  orderId: string,
+  customerId: string,
+): Promise<{ customer: Customer; order: Order } | Response> {
+  const [customer, order] = await Promise.all([
+    rowById<Customer>(env, 'customers', customerId),
+    rowById<Order>(env, 'orders', orderId),
+  ]);
+  if (!customer) return fail(request, env, 404, 'CUSTOMER_NOT_FOUND', 'Customer was not found.');
+  if (!order) return fail(request, env, 404, 'ORDER_NOT_FOUND', 'Order was not found.');
+  if (order.customerId !== customer.id) {
+    return fail(request, env, 403, 'ORDER_OWNERSHIP_REQUIRED', 'This order does not belong to the customer.');
+  }
+  return { customer, order };
+}
+
 async function cancelCustomerOrder(
   request: Request,
   env: OrderLifecycleEnv,
@@ -66,15 +89,9 @@ async function cancelCustomerOrder(
     return fail(request, env, 400, 'INVALID_CANCELLATION_REASON', 'Cancellation reason must be between 5 and 500 characters.');
   }
 
-  const [customer, order] = await Promise.all([
-    rowById<Customer>(env, 'customers', input.customerId),
-    rowById<Order>(env, 'orders', orderId),
-  ]);
-  if (!customer) return fail(request, env, 404, 'CUSTOMER_NOT_FOUND', 'Customer was not found.');
-  if (!order) return fail(request, env, 404, 'ORDER_NOT_FOUND', 'Order was not found.');
-  if (order.customerId !== customer.id) {
-    return fail(request, env, 403, 'ORDER_OWNERSHIP_REQUIRED', 'This order does not belong to the customer.');
-  }
+  const owned = await loadOwnedOrder(request, env, orderId, input.customerId);
+  if (owned instanceof Response) return owned;
+  const { order } = owned;
   if (order.state !== 'placed' || order.paymentState !== 'paid' || order.fulfillmentState !== 'unfulfilled') {
     return fail(request, env, 409, 'ORDER_CANNOT_CANCEL', 'Only paid, unfulfilled orders can be cancelled by the customer.');
   }
@@ -92,12 +109,51 @@ async function cancelCustomerOrder(
   return ok(request, env, updated);
 }
 
+async function retryCustomerPayment(
+  request: Request,
+  env: OrderLifecycleEnv,
+  orderId: string,
+  input: CustomerRetryPaymentInput,
+): Promise<Response> {
+  if (!input.customerId || (input.outcome !== undefined && input.outcome !== 'success' && input.outcome !== 'failure')) {
+    return fail(request, env, 400, 'INVALID_PAYMENT_RETRY', 'Customer and a supported retry outcome are required.');
+  }
+
+  const owned = await loadOwnedOrder(request, env, orderId, input.customerId);
+  if (owned instanceof Response) return owned;
+  const { order } = owned;
+  if (order.state !== 'placed' || order.paymentState !== 'failed' || order.fulfillmentState !== 'unfulfilled') {
+    return fail(request, env, 409, 'ORDER_PAYMENT_CANNOT_RETRY', 'Only failed payments on placed, unfulfilled orders can be retried.');
+  }
+
+  const outcome = input.outcome ?? 'success';
+  const updated: Order = {
+    ...order,
+    paymentState: outcome === 'success' ? 'paid' : 'failed',
+    updatedAt: new Date().toISOString(),
+  };
+  await env.DB.prepare('UPDATE orders SET data_json = ? WHERE id = ?')
+    .bind(JSON.stringify(updated), order.id)
+    .run();
+  return ok(request, env, updated);
+}
+
 export async function handleOrderLifecycle(request: Request, env: OrderLifecycleEnv): Promise<Response | null> {
   const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
-  const cancelMatch = path.match(/^\/api\/v1\/orders\/([^/]+)\/cancel$/);
-  if (request.method !== 'POST' || !cancelMatch) return null;
 
-  const body = await request.json().catch(() => null) as CustomerCancelOrderInput | null;
-  if (!body) return fail(request, env, 400, 'INVALID_ORDER_CANCELLATION', 'Cancellation request body is required.');
-  return cancelCustomerOrder(request, env, decodeURIComponent(cancelMatch[1]!), body);
+  const cancelMatch = path.match(/^\/api\/v1\/orders\/([^/]+)\/cancel$/);
+  if (request.method === 'POST' && cancelMatch) {
+    const body = await request.json().catch(() => null) as CustomerCancelOrderInput | null;
+    if (!body) return fail(request, env, 400, 'INVALID_ORDER_CANCELLATION', 'Cancellation request body is required.');
+    return cancelCustomerOrder(request, env, decodeURIComponent(cancelMatch[1]!), body);
+  }
+
+  const retryMatch = path.match(/^\/api\/v1\/orders\/([^/]+)\/retry-payment$/);
+  if (request.method === 'POST' && retryMatch) {
+    const body = await request.json().catch(() => null) as CustomerRetryPaymentInput | null;
+    if (!body) return fail(request, env, 400, 'INVALID_PAYMENT_RETRY', 'Payment retry body is required.');
+    return retryCustomerPayment(request, env, decodeURIComponent(retryMatch[1]!), body);
+  }
+
+  return null;
 }
