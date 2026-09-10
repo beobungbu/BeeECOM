@@ -48,7 +48,7 @@ test.describe('Profile and delivery settings product flow', () => {
     await resetHealthy();
   });
 
-  test('SettingsItem navigation exposes real list ownership and profile details persist', async ({ page }) => {
+  test('SettingsItem navigation exposes real list ownership and profile details persist across reload', async ({ page }) => {
     await page.goto(`${STOREFRONT}/conformance/account-settings`);
     await expect(page.getByRole('heading', { name: 'Account settings' })).toBeVisible();
 
@@ -70,9 +70,13 @@ test.describe('Profile and delivery settings product flow', () => {
     const persisted = await getCustomer();
     expect(persisted.displayName).toBe('Ava N.');
     expect(persisted.email).toBe('ava+shop@example.test');
+
+    await page.reload();
+    await expect(page.getByRole('textbox', { name: /Full name/ })).toHaveValue('Ava N.');
+    await expect(page.getByRole('textbox', { name: /Email/ })).toHaveValue('ava+shop@example.test');
   });
 
-  test('delivery editor uses direct Label-to-Switch naming and persists the canonical address', async ({ page }) => {
+  test('delivery editor uses direct Label-to-Switch naming and persists the address across reload', async ({ page }) => {
     await page.goto(`${STOREFRONT}/conformance/account-settings`);
     await expect(page.getByTestId('settings-delivery-item')).toBeVisible();
     await page.getByTestId('settings-delivery-item').click();
@@ -93,6 +97,11 @@ test.describe('Profile and delivery settings product flow', () => {
     expect(address?.city).toBe('San Francisco');
     expect(address?.isDefault).toBe(true);
     await expect(page.getByTestId('delivery-address-summary')).toContainText('202 Market Street');
+
+    await page.reload();
+    await page.getByTestId('settings-delivery-item').click();
+    await expect(page.getByRole('textbox', { name: /Address line/ })).toHaveValue('202 Market Street');
+    await expect(page.getByTestId('delivery-address-summary')).toContainText('202 Market Street');
   });
 
   test('customer update endpoint rejects removing the only default delivery address', async () => {
@@ -107,6 +116,21 @@ test.describe('Profile and delivery settings product flow', () => {
 
     const persisted = await getCustomer();
     expect(persisted.addresses.find((item) => item.id === 'addr-ava-home')?.isDefault).toBe(true);
+  });
+
+  test('customer update endpoint rejects another customer email without mutating the profile', async () => {
+    const api = await playwrightRequest.newContext({ baseURL: API });
+    const response = await api.patch('/api/v1/customers/cust-ava', {
+      data: { email: 'minh@example.test' },
+    });
+    expect(response.status()).toBe(409);
+    const body = await response.json() as { ok: false; error: { code: string } };
+    expect(body.error.code).toBe('CUSTOMER_EMAIL_IN_USE');
+    await api.dispose();
+
+    const persisted = await getCustomer();
+    expect(persisted.email).toBe('ava@example.test');
+    expect(persisted.displayName).toBe('Ava Nguyen');
   });
 
   test('settings reflow at 390px, pass serious/critical axe and produce visual evidence', async ({ page }, testInfo) => {
