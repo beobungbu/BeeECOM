@@ -5,6 +5,14 @@ const API = 'http://127.0.0.1:8787';
 const ADMIN = 'http://127.0.0.1:5174';
 const RESET_TOKEN = 'qa-reset-token';
 
+type CatalogProductSnapshot = {
+  id: string;
+  title: string;
+  description: string;
+  featured: boolean;
+  variants: Array<{ id: string; inventoryQuantity: number }>;
+};
+
 async function resetHealthy() {
   const api = await playwrightRequest.newContext({ baseURL: API });
   const response = await api.post('/api/v1/demo/reset', {
@@ -15,17 +23,27 @@ async function resetHealthy() {
   await api.dispose();
 }
 
-async function firstCatalogProduct() {
+async function catalogProducts(): Promise<CatalogProductSnapshot[]> {
   const api = await playwrightRequest.newContext({ baseURL: API });
   const response = await api.get('/api/v1/catalog/products?pageSize=24&sort=featured');
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as {
     ok: true;
-    data: { items: Array<{ id: string; title: string; description: string; featured: boolean; variants: Array<{ id: string; inventoryQuantity: number }> }> };
+    data: { items: CatalogProductSnapshot[] };
   };
   await api.dispose();
-  const product = body.data.items[0];
+  return body.data.items;
+}
+
+async function firstCatalogProduct(): Promise<CatalogProductSnapshot> {
+  const product = (await catalogProducts())[0];
   if (!product?.variants[0]) throw new Error('Healthy scenario must expose a product with a variant.');
+  return product;
+}
+
+async function catalogProductById(productId: string): Promise<CatalogProductSnapshot> {
+  const product = (await catalogProducts()).find((item) => item.id === productId);
+  if (!product?.variants[0]) throw new Error(`Catalog product ${productId} must remain queryable after mutation.`);
   return product;
 }
 
@@ -58,7 +76,9 @@ test.describe('BeeUI form composition in real Admin operations', () => {
     await page.getByRole('button', { name: 'Save merchandising metadata' }).click();
     await expect(page.getByText('Catalog metadata persisted.')).toBeVisible();
 
-    const after = await firstCatalogProduct();
+    // Toggling `featured` is allowed to reorder `sort=featured`; persistence is
+    // therefore verified by stable product identity, never by list position.
+    const after = await catalogProductById(before.id);
     expect(after.title).toBe(nextTitle);
     expect(after.description).toBe(nextDescription);
     expect(after.featured).toBe(!before.featured);
@@ -90,7 +110,12 @@ test.describe('BeeUI form composition in real Admin operations', () => {
     await reason.fill('');
     await page.getByRole('button', { name: 'Apply inventory adjustment' }).click();
     await expect(page.getByRole('alert').filter({ hasText: 'Adjustment reason is required.' })).toBeVisible();
-    await expect(page.getByRole('alert').filter({ hasText: 'Confirm the stock-level review' })).toBeVisible();
+
+    // Standalone FormMessage deliberately uses a polite live region and does
+    // not claim role="alert". Field-generated invalid feedback has its own alert semantics.
+    const confirmationMessage = page.getByText('Confirm the stock-level review before applying the adjustment.');
+    await expect(confirmationMessage).toBeVisible();
+    await expect(confirmationMessage).toHaveAttribute('aria-live', 'polite');
 
     await reason.fill('BeeUI forms acceptance');
     await confirmation.click();
@@ -99,7 +124,7 @@ test.describe('BeeUI form composition in real Admin operations', () => {
     await expect(page.getByText('Inventory adjustment persisted.')).toBeVisible();
     await expect(page.getByTestId('forms-current-stock')).toContainText(`Current stock: ${beforeStock - 1}`);
 
-    const after = await firstCatalogProduct();
+    const after = await catalogProductById(before.id);
     expect(after.variants[0].inventoryQuantity).toBe(beforeStock - 1);
   });
 });
