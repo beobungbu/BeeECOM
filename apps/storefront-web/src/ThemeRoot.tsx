@@ -48,6 +48,7 @@ function CurrentSurface() {
 
 export function ThemeRoot() {
   const [preference, setPreference] = React.useState<ThemePreference>(initialPreference);
+  const showThemeHarness = window.location.pathname === '/';
 
   const changePreference = React.useCallback((next: ThemePreference) => {
     applyThemePreference(next);
@@ -58,7 +59,9 @@ export function ThemeRoot() {
   return (
     <BeeUIProvider>
       <CurrentSurface />
-      <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
+      {showThemeHarness ? (
+        <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
+      ) : null}
     </BeeUIProvider>
   );
 }
