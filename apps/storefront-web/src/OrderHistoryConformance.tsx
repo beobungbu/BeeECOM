@@ -6,6 +6,7 @@ import {
   Box,
   Breadcrumb,
   BreadcrumbItem,
+  Button,
   Card,
   DescriptionItem,
   DescriptionList,
@@ -179,6 +180,27 @@ export function OrderHistoryConformance() {
                     />
                   ))}
                 </ListGroup>
+
+                {selectedOrder.paymentState === 'paid' ? (
+                  <Box className="gap-3 rounded-lg border border-border p-4" testID="order-review-actions">
+                    <Box className="gap-1">
+                      <Text variant="heading">Share your experience</Text>
+                      <Text variant="body">Review a purchased item to help other shoppers.</Text>
+                    </Box>
+                    <Box className="flex-row flex-wrap gap-2">
+                      {selectedOrder.lines.map((line) => (
+                        <Button
+                          key={line.id}
+                          variant="outline"
+                          accessibilityLabel={`Review ${line.title}`}
+                          onPress={() => navigate(`/conformance/product-review?orderId=${encodeURIComponent(selectedOrder.id)}&productId=${encodeURIComponent(line.productId)}`)}
+                        >
+                          Review {line.title}
+                        </Button>
+                      ))}
+                    </Box>
+                  </Box>
+                ) : null}
               </Card>
 
               <Box className="min-w-0 flex-1 gap-5">
