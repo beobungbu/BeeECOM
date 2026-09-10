@@ -407,6 +407,9 @@ export function createDemoDataset(scenario: DemoScenarioName = 'healthy'): DemoD
     case 'payment-failed':
       data.orders[0] = { ...data.orders[0]!, paymentState: 'failed', fulfillmentState: 'unfulfilled' };
       break;
+    case 'cancellation-eligible':
+      data.orders[0] = { ...data.orders[0]!, state: 'placed', paymentState: 'paid', fulfillmentState: 'unfulfilled' };
+      break;
     case 'delayed-shipment':
       data.orders[0] = { ...data.orders[0]!, fulfillmentState: 'processing' };
       break;
