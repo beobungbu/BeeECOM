@@ -9,6 +9,7 @@ import * as React from 'react';
 import { App } from './App';
 import { CatalogFormConformance } from './CatalogFormConformance';
 import { CustomerSegmentationConformance } from './CustomerSegmentationConformance';
+import { ReturnOperationsConformance } from './ReturnOperationsConformance';
 import { ReviewIdentityConformance } from './ReviewIdentityConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
@@ -30,6 +31,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/customer-segmentation') {
     return <CustomerSegmentationConformance />;
+  }
+  if (window.location.pathname === '/conformance/return-operations') {
+    return <ReturnOperationsConformance />;
   }
   return <App />;
 }
