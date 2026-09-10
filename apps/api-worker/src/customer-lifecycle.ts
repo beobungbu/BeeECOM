@@ -87,19 +87,24 @@ function validEmail(value: string): boolean {
 }
 
 function updateAddress(current: Address, input: NonNullable<CustomerUpdateInput['address']>): Address {
-  return {
+  const updated: Address = {
     ...current,
     label: input.label === undefined ? current.label : input.label.trim(),
     fullName: input.fullName === undefined ? current.fullName : input.fullName.trim(),
     phone: input.phone === undefined ? current.phone : input.phone.trim(),
     line1: input.line1 === undefined ? current.line1 : input.line1.trim(),
-    line2: input.line2 === undefined ? current.line2 : input.line2.trim() || undefined,
     city: input.city === undefined ? current.city : input.city.trim(),
     region: input.region === undefined ? current.region : input.region.trim(),
     postalCode: input.postalCode === undefined ? current.postalCode : input.postalCode.trim(),
     countryCode: input.countryCode === undefined ? current.countryCode : input.countryCode.trim().toUpperCase(),
     isDefault: input.isDefault === undefined ? current.isDefault : input.isDefault,
   };
+  if (input.line2 !== undefined) {
+    const line2 = input.line2.trim();
+    if (line2) updated.line2 = line2;
+    else delete updated.line2;
+  }
+  return updated;
 }
 
 function validateAddress(address: Address): string | null {
