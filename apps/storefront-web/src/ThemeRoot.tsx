@@ -7,6 +7,7 @@ import {
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
+import { NavigationConformance } from './NavigationConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -27,9 +28,11 @@ export function ThemeRoot() {
     setPreference(next);
   }, []);
 
+  const isNavigationConformance = window.location.pathname === '/conformance/navigation';
+
   return (
     <BeeUIProvider>
-      <App />
+      {isNavigationConformance ? <NavigationConformance /> : <App />}
       <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
     </BeeUIProvider>
   );
