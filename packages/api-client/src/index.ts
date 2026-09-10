@@ -14,6 +14,7 @@ import type {
   ChatThreadQuery,
   CheckoutInput,
   CreateChatThreadInput,
+  CustomerUpdateInput,
   DemoResetInput,
   DemoResetResult,
   MarkChatReadInput,
@@ -182,7 +183,10 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       list: (query: OrderQuery = {}) => request<Page<Order>>(`/api/v1/orders${encodeOrderQuery(query)}`),
       get: (id: string) => request<Order>(`/api/v1/orders/${encodeURIComponent(id)}`),
     },
-    customers: { get: (id: string) => request<Customer>(`/api/v1/customers/${encodeURIComponent(id)}`) },
+    customers: {
+      get: (id: string) => request<Customer>(`/api/v1/customers/${encodeURIComponent(id)}`),
+      update: (id: string, input: CustomerUpdateInput) => request<Customer>(`/api/v1/customers/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    },
     promotions: { list: () => request<Promotion[]>('/api/v1/promotions') },
     chat: {
       listThreads: (query: ChatThreadQuery = {}) => request<Page<ChatThread>>(`/api/v1/chat/threads${encodeChatThreadQuery(query)}`),
