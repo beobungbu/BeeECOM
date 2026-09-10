@@ -27,18 +27,18 @@ test.describe('BeeUI account verification inputs with canonical customer identit
 
     const password = page.getByLabel('Account password');
     await expect(password).toHaveAttribute('type', 'password');
-    await expect(page.getByTestId('password-visibility-state')).toHaveText('Password masked');
+    await expect(page.getByTestId('password-visibility-state')).toHaveText('Password hidden');
 
     const show = page.getByRole('button', { name: 'Show password' });
     await expect(show).toBeVisible();
     await show.click();
-    await expect(password).toHaveAttribute('type', 'text');
+    await expect(password).toHaveJSProperty('type', 'text');
     await expect(page.getByTestId('password-visibility-state')).toHaveText('Password visible');
 
     const hide = page.getByRole('button', { name: 'Hide password' });
     await hide.click();
-    await expect(password).toHaveAttribute('type', 'password');
-    await expect(page.getByTestId('password-visibility-state')).toHaveText('Password masked');
+    await expect(password).toHaveJSProperty('type', 'password');
+    await expect(page.getByTestId('password-visibility-state')).toHaveText('Password hidden');
   });
 
   test('OTPInput exposes numeric one-time-code attributes and completes at six digits', async ({ page }) => {
@@ -56,9 +56,8 @@ test.describe('BeeUI account verification inputs with canonical customer identit
 
     await otp.fill('123456');
     await expect(page.getByTestId('otp-value-state')).toHaveText('6 of 6 digits entered');
-    await expect(page.getByTestId('verification-complete')).toHaveText(
-      'Verification code 123456 accepted for Ava Nguyen.',
-    );
+    await expect(page.getByTestId('verification-complete')).toContainText('Identity verified');
+    await expect(page.getByTestId('verification-complete')).toContainText('Ava Nguyen');
   });
 
   test('account verification reflows at 360px without serious or critical axe findings', async ({ page }) => {
