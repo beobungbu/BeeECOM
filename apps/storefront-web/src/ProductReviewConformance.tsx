@@ -72,7 +72,7 @@ export function ProductReviewConformance() {
     setLoading(true);
     setError(null);
     if (!orderId || !productId) {
-      setError('Choose a purchased product from your order history to write a review.');
+      setError('Choose a delivered product from your order history to write a review.');
       setLoading(false);
       return;
     }
@@ -104,6 +104,7 @@ export function ProductReviewConformance() {
       && product
       && order.customerId === customer.id
       && order.paymentState === 'paid'
+      && order.fulfillmentState === 'delivered'
       && order.lines.some((line) => line.productId === product.id),
   );
   const titleInvalid = attempted && (title.trim().length < 3 || title.trim().length > 120);
@@ -167,14 +168,14 @@ export function ProductReviewConformance() {
                   {product.subtitle ? <Text variant="body">{product.subtitle}</Text> : null}
                   <Text variant="body">Order {order.number} · purchased by {customer.displayName}</Text>
                 </VStack>
-                {eligible ? <Badge>Verified purchase</Badge> : <Badge>Not eligible</Badge>}
+                {eligible ? <Badge>Verified delivery</Badge> : <Badge>Not eligible</Badge>}
               </HStack>
             </Card>
 
             {!eligible ? (
-              <Card className="gap-2 p-5 md:p-6">
-                <Text variant="heading">This purchase can’t be reviewed</Text>
-                <Text variant="body">Reviews are available for products purchased on your account.</Text>
+              <Card className="gap-2 p-5 md:p-6" testID="review-not-eligible">
+                <Text variant="heading">This purchase can’t be reviewed yet</Text>
+                <Text variant="body">Reviews become available after a paid order containing this product is delivered.</Text>
               </Card>
             ) : review ? (
               <Card className="gap-4 p-5 md:p-6" testID="submitted-review">
