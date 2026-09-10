@@ -23,7 +23,7 @@ test.describe('BeeUI account verification inputs with canonical customer identit
   test('PasswordInput masks by default and exposes an accessible show/hide toggle', async ({ page }) => {
     await page.goto(`${STOREFRONT}/conformance/account-verification`);
     await expect(page.getByTestId('verification-account-identity')).toContainText('Ava Nguyen');
-    await expect(page.getByTestId('verification-account-identity')).toContainText('ava@example.com');
+    await expect(page.getByTestId('verification-account-identity')).toContainText('ava@example.test');
 
     const password = page.getByLabel('Account password');
     await expect(password).toHaveAttribute('type', 'password');
