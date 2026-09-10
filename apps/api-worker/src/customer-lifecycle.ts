@@ -87,13 +87,15 @@ function validEmail(value: string): boolean {
 }
 
 function updateAddress(current: Address, input: NonNullable<CustomerUpdateInput['address']>): Address {
+  const nextLine2 = input.line2 === undefined ? current.line2 : input.line2.trim() || undefined;
+  const { line2: _currentLine2, ...currentWithoutLine2 } = current;
   return {
-    ...current,
+    ...currentWithoutLine2,
+    ...(nextLine2 === undefined ? {} : { line2: nextLine2 }),
     label: input.label === undefined ? current.label : input.label.trim(),
     fullName: input.fullName === undefined ? current.fullName : input.fullName.trim(),
     phone: input.phone === undefined ? current.phone : input.phone.trim(),
     line1: input.line1 === undefined ? current.line1 : input.line1.trim(),
-    line2: input.line2 === undefined ? current.line2 : input.line2.trim() || undefined,
     city: input.city === undefined ? current.city : input.city.trim(),
     region: input.region === undefined ? current.region : input.region.trim(),
     postalCode: input.postalCode === undefined ? current.postalCode : input.postalCode.trim(),
