@@ -112,28 +112,28 @@ export function StatusConformance() {
 
             <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="p-4">
-                <Stat>
+                <Stat testID="products-stat">
                   <StatLabel>Products</StatLabel>
                   <StatValue>{products.length}</StatValue>
                   <StatHelpText>Canonical catalog rows</StatHelpText>
                 </Stat>
               </Card>
               <Card className="p-4">
-                <Stat>
+                <Stat testID="variants-stat">
                   <StatLabel>Variants</StatLabel>
                   <StatValue>{variants.length}</StatValue>
                   <StatHelpText>Purchasable SKU records</StatHelpText>
                 </Stat>
               </Card>
               <Card className="p-4">
-                <Stat>
+                <Stat testID="available-units-stat">
                   <StatLabel>Available units</StatLabel>
                   <StatValue>{availableUnits}</StatValue>
                   <StatHelpText>Inventory quantity sum</StatHelpText>
                 </Stat>
               </Card>
               <Card className="p-4">
-                <Stat>
+                <Stat testID="attention-stat">
                   <StatLabel>Needs attention</StatLabel>
                   <StatValue>{lowStock + outOfStock}</StatValue>
                   <StatHelpText>Low or out-of-stock variants</StatHelpText>
