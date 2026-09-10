@@ -11,6 +11,7 @@ import {
   proxyChatWebSocket,
   type DurableObjectNamespaceLike,
 } from './realtime';
+import { handleReturnLifecycle } from './return-lifecycle';
 import { handleReviewLifecycle } from './review-lifecycle';
 import { handleWishlistLifecycle } from './wishlist-lifecycle';
 
@@ -63,6 +64,8 @@ export default {
     if (catalogResponse) return catalogResponse;
     const wishlistResponse = await handleWishlistLifecycle(request, env);
     if (wishlistResponse) return wishlistResponse;
+    const returnResponse = await handleReturnLifecycle(request, env);
+    if (returnResponse) return returnResponse;
     const reviewResponse = await handleReviewLifecycle(request, env);
     if (reviewResponse) return reviewResponse;
     const lifecycleResponse = await handleChatLifecycle(request, env);
