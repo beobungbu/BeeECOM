@@ -93,9 +93,17 @@ async function createReturn(request: Request, env: ReturnLifecycleEnv, input: Cr
     requestedAt: now,
     updatedAt: now,
   };
-  await env.DB.prepare('INSERT INTO returns (id, order_id, customer_id, updated_at, data_json) VALUES (?, ?, ?, ?, ?)')
-    .bind(item.id, item.orderId, item.customerId, item.updatedAt, JSON.stringify(item))
-    .run();
+  try {
+    await env.DB.prepare('INSERT INTO returns (id, order_id, customer_id, updated_at, data_json) VALUES (?, ?, ?, ?, ?)')
+      .bind(item.id, item.orderId, item.customerId, item.updatedAt, JSON.stringify(item))
+      .run();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.toUpperCase().includes('UNIQUE')) {
+      return fail(request, env, 409, 'RETURN_ALREADY_EXISTS', 'A return request already exists for this order.');
+    }
+    throw error;
+  }
   return ok(request, env, item, 201);
 }
 
