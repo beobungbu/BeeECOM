@@ -11,6 +11,7 @@ import { App } from './App';
 import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
 import { CollectionDiscoveryConformance } from './CollectionDiscoveryConformance';
 import { LayoutActionsConformance } from './LayoutActionsConformance';
+import { OrderHistoryConformance } from './OrderHistoryConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -34,6 +35,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/collections') {
     return <CollectionDiscoveryConformance />;
+  }
+  if (window.location.pathname === '/conformance/orders' || window.location.pathname.startsWith('/conformance/orders/')) {
+    return <OrderHistoryConformance />;
   }
   return <App />;
 }
