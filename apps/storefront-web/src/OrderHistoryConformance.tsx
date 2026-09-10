@@ -57,6 +57,7 @@ export function OrderHistoryConformance() {
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [cancellationReason, setCancellationReason] = React.useState('Ordered by mistake');
   const orderId = orderIdFromPath();
@@ -89,7 +90,7 @@ export function OrderHistoryConformance() {
   async function cancelOrder() {
     if (!selectedOrder || cancellationReason.trim().length < 5) return;
     setBusy(true);
-    setError(null);
+    setActionError(null);
     setNotice(null);
     try {
       const updated = await api.orders.cancel(selectedOrder.id, {
@@ -99,7 +100,28 @@ export function OrderHistoryConformance() {
       setOrders((current) => current.map((order) => order.id === updated.id ? updated : order));
       setNotice(`Order ${updated.number} cancelled. The demo payment is marked as refunded.`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to cancel this order.');
+      setActionError(cause instanceof Error ? cause.message : 'Unable to cancel this order.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function retryPayment() {
+    if (!selectedOrder) return;
+    setBusy(true);
+    setActionError(null);
+    setNotice(null);
+    try {
+      const updated = await api.orders.retryPayment(selectedOrder.id, {
+        customerId: CUSTOMER_ID,
+        outcome: 'success',
+      });
+      setOrders((current) => current.map((order) => order.id === updated.id ? updated : order));
+      setNotice(updated.paymentState === 'paid'
+        ? `Payment confirmed for order ${updated.number}. Your order is ready for fulfillment.`
+        : `Payment for order ${updated.number} could not be completed. Please try again.`);
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'Unable to retry payment for this order.');
     } finally {
       setBusy(false);
     }
@@ -107,6 +129,9 @@ export function OrderHistoryConformance() {
 
   const canCustomerCancel = selectedOrder?.state === 'placed'
     && selectedOrder.paymentState === 'paid'
+    && selectedOrder.fulfillmentState === 'unfulfilled';
+  const canRetryPayment = selectedOrder?.state === 'placed'
+    && selectedOrder.paymentState === 'failed'
     && selectedOrder.fulfillmentState === 'unfulfilled';
 
   return (
@@ -133,6 +158,13 @@ export function OrderHistoryConformance() {
         {notice ? (
           <Card className="p-4" testID="order-notice">
             <Text variant="body">{notice}</Text>
+          </Card>
+        ) : null}
+
+        {actionError ? (
+          <Card className="gap-1 p-4" testID="order-action-error">
+            <Text variant="heading">We couldn’t complete that action</Text>
+            <Text variant="body">{actionError}</Text>
           </Card>
         ) : null}
 
@@ -221,6 +253,24 @@ export function OrderHistoryConformance() {
                     />
                   ))}
                 </ListGroup>
+
+                {canRetryPayment ? (
+                  <Box className="gap-3 rounded-lg border border-border p-4" testID="order-payment-recovery">
+                    <Box className="gap-1">
+                      <Text variant="heading">Payment needs attention</Text>
+                      <Text variant="body">Your last payment did not complete. Retry it before fulfillment can begin.</Text>
+                    </Box>
+                    <Box className="self-start">
+                      <Button
+                        disabled={busy}
+                        accessibilityLabel={`Retry payment for order ${selectedOrder.number}`}
+                        onPress={() => void retryPayment()}
+                      >
+                        {busy ? 'Retrying payment…' : 'Retry payment'}
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : null}
 
                 {canCustomerCancel ? (
                   <Box className="gap-3 rounded-lg border border-border p-4" testID="order-cancel-action">
