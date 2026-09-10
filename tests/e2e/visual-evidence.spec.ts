@@ -16,7 +16,7 @@ async function resetScenario(scenario: string) {
 }
 
 async function waitForStorefrontMedia(page: Page) {
-  await expect(page.getByText('Catalog')).toBeVisible();
+  await expect(page.getByText('Catalog', { exact: true })).toBeVisible();
   const image = page.locator('img').first();
   await expect(image).toBeVisible({ timeout: 15_000 });
   await expect.poll(
