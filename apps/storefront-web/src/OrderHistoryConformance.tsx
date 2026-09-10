@@ -201,6 +201,24 @@ export function OrderHistoryConformance() {
                     </Box>
                   </Box>
                 ) : null}
+
+                {selectedOrder.paymentState === 'paid' && selectedOrder.fulfillmentState === 'delivered' ? (
+                  <Box className="gap-3 rounded-lg border border-border p-4" testID="order-return-action">
+                    <Box className="gap-1">
+                      <Text variant="heading">Need to send something back?</Text>
+                      <Text variant="body">Start a return request and our returns team will review it.</Text>
+                    </Box>
+                    <Box className="self-start">
+                      <Button
+                        variant="outline"
+                        accessibilityLabel={`Start a return for order ${selectedOrder.number}`}
+                        onPress={() => navigate(`/conformance/return-request?orderId=${encodeURIComponent(selectedOrder.id)}`)}
+                      >
+                        Start a return
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : null}
               </Card>
 
               <Box className="min-w-0 flex-1 gap-5">
