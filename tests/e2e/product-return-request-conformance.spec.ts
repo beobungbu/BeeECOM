@@ -79,7 +79,9 @@ test.describe('Customer return request lifecycle', () => {
     await expect(page.getByTestId('return-request-form')).toBeVisible();
 
     await page.getByRole('button', { name: 'Submit return request' }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'Select a return reason.' })).toBeVisible();
+    const reasonMessage = page.getByText('Select a return reason.', { exact: true });
+    await expect(reasonMessage).toBeVisible();
+    await expect(reasonMessage).toHaveAttribute('aria-live', 'polite');
 
     const damaged = page.getByRole('radio', { name: 'Damaged or defective' });
     await damaged.click();
