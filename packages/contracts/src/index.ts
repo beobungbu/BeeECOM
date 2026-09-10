@@ -34,6 +34,7 @@ export interface WishlistAddItemInput { productId: string }
 export interface CheckoutInput { cartId: string; addressId: string; paymentScenario?: 'success' | 'failure' | undefined }
 export interface OrderQuery { customerId?: string | undefined; page?: number | undefined; pageSize?: number | undefined }
 export interface CustomerCancelOrderInput { customerId: string; reason: string }
+export interface CustomerRetryPaymentInput { customerId: string; outcome?: 'success' | 'failure' | undefined }
 export interface ReviewQuery { productId?: string | undefined; customerId?: string | undefined }
 export interface ReturnQuery { customerId?: string | undefined; orderId?: string | undefined }
 export interface ChatThreadQuery { customerId?: string | undefined; status?: 'open' | 'closed' | undefined; page?: number | undefined; pageSize?: number | undefined }
@@ -108,6 +109,7 @@ export interface ApiContractMap {
   'GET /api/v1/orders': { query: OrderQuery; response: Page<Order> };
   'GET /api/v1/orders/:id': { response: Order };
   'POST /api/v1/orders/:id/cancel': { body: CustomerCancelOrderInput; response: Order };
+  'POST /api/v1/orders/:id/retry-payment': { body: CustomerRetryPaymentInput; response: Order };
   'GET /api/v1/customers/:id': { response: Customer };
   'GET /api/v1/reviews': { query: ReviewQuery; response: Review[] };
   'POST /api/v1/reviews': { body: CreateReviewInput; response: Review };
