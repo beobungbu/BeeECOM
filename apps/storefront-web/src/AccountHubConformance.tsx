@@ -202,17 +202,24 @@ export function AccountHubConformance() {
             <Section
               testID="account-settings-section"
               title="Account settings"
-              description="Manage security and the details connected to your account."
+              description="Manage your profile, delivery details and account security."
             >
-              <Card className="gap-4 p-5 md:p-6">
-                <HStack align="center" justify="between" gap="lg" wrap>
+              <Box className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <Card className="gap-4 p-5 md:p-6">
+                  <VStack className="min-w-0 flex-1" gap="xs">
+                    <Text variant="heading">Profile & delivery</Text>
+                    <Text variant="body">Update your name, email and default delivery address.</Text>
+                  </VStack>
+                  <Link onPress={() => navigate('/conformance/account-settings')}>Open profile & delivery</Link>
+                </Card>
+                <Card className="gap-4 p-5 md:p-6">
                   <VStack className="min-w-0 flex-1" gap="xs">
                     <Text variant="heading">Security</Text>
                     <Text variant="body">Review your password and verification settings.</Text>
                   </VStack>
                   <Link onPress={() => navigate('/conformance/account-verification')}>Open security</Link>
-                </HStack>
-              </Card>
+                </Card>
+              </Box>
             </Section>
           </VStack>
         ) : null}
