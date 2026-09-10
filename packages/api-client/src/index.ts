@@ -18,6 +18,7 @@ import type {
   CreateReturnInput,
   CreateReviewInput,
   CustomerCancelOrderInput,
+  CustomerRetryPaymentInput,
   DemoResetInput,
   DemoResetResult,
   MarkChatReadInput,
@@ -204,6 +205,7 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
       list: (query: OrderQuery = {}) => request<Page<Order>>(`/api/v1/orders${encodeOrderQuery(query)}`),
       get: (id: string) => request<Order>(`/api/v1/orders/${encodeURIComponent(id)}`),
       cancel: (id: string, input: CustomerCancelOrderInput) => request<Order>(`/api/v1/orders/${encodeURIComponent(id)}/cancel`, { method: 'POST', body: JSON.stringify(input) }),
+      retryPayment: (id: string, input: CustomerRetryPaymentInput) => request<Order>(`/api/v1/orders/${encodeURIComponent(id)}/retry-payment`, { method: 'POST', body: JSON.stringify(input) }),
     },
     customers: { get: (id: string) => request<Customer>(`/api/v1/customers/${encodeURIComponent(id)}`) },
     reviews: {
