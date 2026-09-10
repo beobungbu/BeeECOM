@@ -1,4 +1,4 @@
-import type { ApiFailure, ApiSuccess, CreateReviewInput } from '@beeecom/contracts';
+import type { ApiFailure, ApiSuccess, CreateReviewInput, ReviewQuery } from '@beeecom/contracts';
 import type { Customer, Order, Product, Review } from '@beeecom/domain';
 
 interface D1Result<T = unknown> {
@@ -83,14 +83,20 @@ function validRating(value: unknown): value is CreateReviewInput['rating'] {
   return Number.isInteger(value) && typeof value === 'number' && value >= 1 && value <= 5;
 }
 
-export async function handleReviewLifecycle(
-  request: Request,
-  env: ReviewLifecycleEnv,
-): Promise<Response | null> {
-  const url = new URL(request.url);
-  const path = url.pathname.replace(/\/$/, '') || '/';
-  if (request.method !== 'POST' || path !== '/api/v1/reviews') return null;
+async function listReviews(request: Request, env: ReviewLifecycleEnv, url: URL): Promise<Response> {
+  const query: ReviewQuery = {
+    productId: url.searchParams.get('productId') ?? undefined,
+    customerId: url.searchParams.get('customerId') ?? undefined,
+  };
+  const rows = await env.DB.prepare('SELECT data_json FROM reviews ORDER BY created_at DESC').all<{ data_json: string }>();
+  let reviews = rows.results.map((row) => parseJson<Review>(row.data_json));
+  if (query.productId) reviews = reviews.filter((review) => review.productId === query.productId);
+  if (query.customerId) reviews = reviews.filter((review) => review.customerId === query.customerId);
+  else reviews = reviews.filter((review) => review.status === 'published');
+  return ok(request, env, reviews);
+}
 
+async function createReview(request: Request, env: ReviewLifecycleEnv): Promise<Response> {
   const body = await request.json().catch(() => null) as CreateReviewInput | null;
   if (!body?.productId || !body.customerId || !validRating(body.rating) || !body.title?.trim() || !body.body?.trim()) {
     return fail(request, env, 400, 'INVALID_REVIEW', 'Product, customer, rating, title and review body are required.');
@@ -145,4 +151,16 @@ export async function handleReviewLifecycle(
     .run();
 
   return ok(request, env, review, 201);
+}
+
+export async function handleReviewLifecycle(
+  request: Request,
+  env: ReviewLifecycleEnv,
+): Promise<Response | null> {
+  const url = new URL(request.url);
+  const path = url.pathname.replace(/\/$/, '') || '/';
+  if (path !== '/api/v1/reviews') return null;
+  if (request.method === 'GET') return listReviews(request, env, url);
+  if (request.method === 'POST') return createReview(request, env);
+  return null;
 }
