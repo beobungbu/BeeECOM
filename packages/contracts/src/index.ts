@@ -39,6 +39,25 @@ export interface CreateReviewInput { productId: string; customerId: string; rati
 export interface CreateReturnInput { orderId: string; customerId: string; reason: string }
 export interface SendChatMessageInput { threadId: string; senderId: string; senderRole: 'customer' | 'support-agent'; body: string; clientMessageId: string }
 
+export interface CustomerAddressUpdateInput {
+  id: string;
+  label?: string | undefined;
+  fullName?: string | undefined;
+  phone?: string | undefined;
+  line1?: string | undefined;
+  line2?: string | undefined;
+  city?: string | undefined;
+  region?: string | undefined;
+  postalCode?: string | undefined;
+  countryCode?: string | undefined;
+  isDefault?: boolean | undefined;
+}
+export interface CustomerUpdateInput {
+  displayName?: string | undefined;
+  email?: string | undefined;
+  address?: CustomerAddressUpdateInput | undefined;
+}
+
 export interface AdminProductUpdateInput {
   title?: string | undefined;
   subtitle?: string | undefined;
@@ -102,6 +121,7 @@ export interface ApiContractMap {
   'GET /api/v1/orders': { query: OrderQuery; response: Page<Order> };
   'GET /api/v1/orders/:id': { response: Order };
   'GET /api/v1/customers/:id': { response: Customer };
+  'PATCH /api/v1/customers/:id': { body: CustomerUpdateInput; response: Customer };
   'GET /api/v1/promotions': { response: Promotion[] };
   'POST /api/v1/returns': { body: CreateReturnInput; response: ReturnRequest };
   'GET /api/v1/chat/threads': { query: ChatThreadQuery; response: Page<ChatThread> };
