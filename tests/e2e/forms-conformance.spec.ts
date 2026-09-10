@@ -48,7 +48,7 @@ test.describe('BeeUI form composition in real Admin operations', () => {
 
     await title.fill('');
     await page.getByRole('button', { name: 'Save merchandising metadata' }).click();
-    await expect(page.getByRole('alert')).toContainText('Product title is required.');
+    await expect(page.getByRole('alert').filter({ hasText: 'Product title is required.' })).toBeVisible();
 
     const nextTitle = `${before.title} QA`;
     const nextDescription = `${before.description} Consumer form acceptance.`;
@@ -89,8 +89,8 @@ test.describe('BeeUI form composition in real Admin operations', () => {
     await quantity.fill('1');
     await reason.fill('');
     await page.getByRole('button', { name: 'Apply inventory adjustment' }).click();
-    await expect(page.getByRole('alert')).toContainText('Adjustment reason is required.');
-    await expect(page.getByRole('alert')).toContainText('Confirm the stock-level review');
+    await expect(page.getByRole('alert').filter({ hasText: 'Adjustment reason is required.' })).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: 'Confirm the stock-level review' })).toBeVisible();
 
     await reason.fill('BeeUI forms acceptance');
     await confirmation.click();
