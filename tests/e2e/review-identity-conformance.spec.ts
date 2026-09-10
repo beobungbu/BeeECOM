@@ -35,14 +35,21 @@ test.describe('BeeUI review identity and moderation contracts', () => {
     await resetHealthy();
   });
 
-  test('Breadcrumb exposes an interactive ancestor and current-page semantics', async ({ page }) => {
+  test('Breadcrumb exposes an interactive ancestor and a non-interactive current page', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/review-identity`);
     await expect(page.getByText('Review moderation acceptance')).toBeVisible();
 
     await expect(page.getByRole('link', { name: 'Reviews' })).toBeVisible();
     const current = page.getByTestId('review-breadcrumb-current');
     await expect(current).toContainText('Great everyday tee');
-    await expect(current).toHaveAttribute('aria-current', 'page');
+    await expect(current).toHaveAttribute('aria-label', 'Great everyday tee');
+
+    // WAI-ARIA APG allows aria-current to be omitted when the element representing
+    // the current page is not a link. BeeUI deliberately renders `current` as
+    // non-interactive text, so the consumer contract is that it must not masquerade
+    // as another actionable breadcrumb item.
+    await expect(page.getByRole('link', { name: 'Great everyday tee' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Great everyday tee' })).toHaveCount(0);
   });
 
   test('ChipGroup exposes a single checked moderation decision and persists it through D1', async ({ page }) => {
