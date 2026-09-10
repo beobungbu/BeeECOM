@@ -8,6 +8,7 @@ import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
 import { CatalogFormConformance } from './CatalogFormConformance';
+import { CustomerSegmentationConformance } from './CustomerSegmentationConformance';
 import { ReviewIdentityConformance } from './ReviewIdentityConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
@@ -26,6 +27,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/review-identity') {
     return <ReviewIdentityConformance />;
+  }
+  if (window.location.pathname === '/conformance/customer-segmentation') {
+    return <CustomerSegmentationConformance />;
   }
   return <App />;
 }
