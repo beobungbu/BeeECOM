@@ -14,6 +14,7 @@ import { CollectionDiscoveryConformance } from './CollectionDiscoveryConformance
 import { LayoutActionsConformance } from './LayoutActionsConformance';
 import { OrderHistoryConformance } from './OrderHistoryConformance';
 import { ProductReviewConformance } from './ProductReviewConformance';
+import { ReturnRequestConformance } from './ReturnRequestConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -46,6 +47,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/product-review') {
     return <ProductReviewConformance />;
+  }
+  if (window.location.pathname === '/conformance/return-request') {
+    return <ReturnRequestConformance />;
   }
   return <App />;
 }
