@@ -7,6 +7,7 @@ import {
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
+import { CampaignSchedulingConformance } from './CampaignSchedulingConformance';
 import { CatalogFormConformance } from './CatalogFormConformance';
 import { CustomerSegmentationConformance } from './CustomerSegmentationConformance';
 import { InventoryHealthConformance } from './InventoryHealthConformance';
@@ -39,11 +40,15 @@ function CurrentSurface() {
   if (window.location.pathname === '/conformance/inventory-health') {
     return <InventoryHealthConformance />;
   }
+  if (window.location.pathname === '/conformance/campaign-scheduling') {
+    return <CampaignSchedulingConformance />;
+  }
   return <App />;
 }
 
 export function ThemeRoot() {
   const [preference, setPreference] = React.useState<ThemePreference>(initialPreference);
+  const showThemeHarness = window.location.pathname === '/';
 
   const changePreference = React.useCallback((next: ThemePreference) => {
     applyThemePreference(next);
@@ -54,7 +59,9 @@ export function ThemeRoot() {
   return (
     <BeeUIProvider>
       <CurrentSurface />
-      <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
+      {showThemeHarness ? (
+        <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
+      ) : null}
     </BeeUIProvider>
   );
 }
