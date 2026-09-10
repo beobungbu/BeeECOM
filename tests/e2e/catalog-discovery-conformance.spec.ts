@@ -53,7 +53,7 @@ test.describe('BeeUI catalog discovery controls against the canonical Worker + D
     await expect(priceLow).toBeChecked();
     await expect(featured).not.toBeChecked();
 
-    const results = page.getByTestId('catalog-results').locator('[data-testid^="catalog-result-"]');
+    const results = page.getByTestId('catalog-results').locator('[data-testid^="catalog-result-prod-"]');
     await expect(results).toHaveCount(4);
     await expect(results.nth(0)).toContainText('Studio Cap');
     await expect(results.nth(1)).toContainText('Cloud Tee');
