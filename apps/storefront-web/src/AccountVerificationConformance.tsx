@@ -1,6 +1,7 @@
 import { createBeeEcomClient } from '@beeecom/api-client';
 import type { Customer } from '@beeecom/domain';
 import {
+  Badge,
   Box,
   Card,
   OTPInput,
@@ -27,12 +28,15 @@ export function AccountVerificationConformance() {
   React.useEffect(() => {
     let active = true;
     setError(null);
-    void api.customers.get(CUSTOMER_ID)
+    void api.customers
+      .get(CUSTOMER_ID)
       .then((next) => {
         if (active) setCustomer(next);
       })
       .catch((cause) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load account identity.');
+        if (active) {
+          setError(cause instanceof Error ? cause.message : 'Unable to load your account.');
+        }
       });
     return () => {
       active = false;
@@ -41,60 +45,99 @@ export function AccountVerificationConformance() {
 
   return (
     <Screen>
-      <Box className="mx-auto w-full max-w-2xl gap-5 p-4 md:p-8">
-        <Card className="gap-2 p-5 md:p-6">
-          <Text variant="title">Account verification acceptance</Text>
+      <Box className="mx-auto w-full max-w-4xl gap-6 p-4 md:p-8">
+        <Box className="gap-2 px-1">
+          <Text variant="body">Account security</Text>
+          <Text variant="title">Verify it’s you</Text>
           <Text variant="body">
-            BeeECOM loads the account identity from Worker + D1; password visibility and one-time-code interaction validate BeeUI consumer behavior without introducing a production authentication backend.
+            Confirm your password and enter a 6-digit code before changing protected account or checkout details.
           </Text>
-        </Card>
+        </Box>
 
-        {error ? <Card className="p-5"><Text variant="body">{error}</Text></Card> : null}
+        {error ? (
+          <Card className="gap-2 p-5 md:p-6">
+            <Text variant="heading">We couldn’t load your account</Text>
+            <Text variant="body">{error}</Text>
+          </Card>
+        ) : null}
+
+        {!customer && !error ? (
+          <Card className="p-5 md:p-6">
+            <Text variant="body">Loading account security…</Text>
+          </Card>
+        ) : null}
 
         {customer ? (
-          <Card className="gap-5 p-5 md:p-6">
-            <Box className="gap-1" testID="verification-account-identity">
-              <Text variant="heading">{customer.displayName}</Text>
-              <Text variant="body">{customer.email}</Text>
-            </Box>
+          <>
+            <Card className="gap-4 p-5 md:p-6">
+              <Box className="flex-row flex-wrap items-center justify-between gap-3">
+                <Box className="min-w-0 flex-1 gap-1" testID="verification-account-identity">
+                  <Text variant="body">Signed in as</Text>
+                  <Text variant="heading">{customer.displayName}</Text>
+                  <Text variant="body">{customer.email}</Text>
+                </Box>
+                <Badge>{customer.tier === 'vip' ? 'VIP customer' : 'Customer'}</Badge>
+              </Box>
+            </Card>
 
-            <Box className="gap-2">
-              <Text variant="heading">Account password</Text>
-              <PasswordInput
-                accessibilityLabel="Account password"
-                onChangeText={setPassword}
-                onVisibleChange={setPasswordVisible}
-                testID="verification-password"
-                value={password}
-                visible={passwordVisible}
-              />
-              <Text testID="password-visibility-state" variant="body">
-                {passwordVisible ? 'Password visible' : 'Password masked'}
-              </Text>
-            </Box>
+            <Box className="gap-5 md:flex-row">
+              <Card className="min-w-0 flex-1 gap-4 p-5 md:p-6">
+                <Box className="gap-1">
+                  <Text variant="heading">Confirm your password</Text>
+                  <Text variant="body">
+                    Sensitive account changes require your current password.
+                  </Text>
+                </Box>
+                <PasswordInput
+                  accessibilityLabel="Account password"
+                  onChangeText={setPassword}
+                  onVisibleChange={setPasswordVisible}
+                  testID="verification-password"
+                  value={password}
+                  visible={passwordVisible}
+                />
+                <Text testID="password-visibility-state" variant="body">
+                  {passwordVisible ? 'Password visible' : 'Password hidden'}
+                </Text>
+              </Card>
 
-            <Box className="gap-2">
-              <Text variant="heading">One-time code</Text>
-              <OTPInput
-                accessibilityLabel="Six digit verification code"
-                length={6}
-                mode="numeric"
-                onComplete={setCompletedOtp}
-                onValueChange={setOtp}
-                testID="verification-otp"
-                value={otp}
-              />
-              <Text testID="otp-value-state" variant="body">
-                {otp.length} of 6 digits entered
-              </Text>
+              <Card className="min-w-0 flex-1 gap-4 p-5 md:p-6">
+                <Box className="gap-1">
+                  <Text variant="heading">Enter verification code</Text>
+                  <Text variant="body">
+                    Enter the 6-digit code associated with this account to continue.
+                  </Text>
+                </Box>
+                <OTPInput
+                  accessibilityLabel="Six digit verification code"
+                  length={6}
+                  mode="numeric"
+                  onComplete={setCompletedOtp}
+                  onValueChange={(next) => {
+                    setOtp(next);
+                    if (next.length < 6) setCompletedOtp(null);
+                  }}
+                  testID="verification-otp"
+                  value={otp}
+                />
+                <Text testID="otp-value-state" variant="body">
+                  {otp.length} of 6 digits entered
+                </Text>
+              </Card>
             </Box>
 
             {completedOtp ? (
-              <Text testID="verification-complete" variant="body">
-                Verification code {completedOtp} accepted for {customer.displayName}.
-              </Text>
+              <Card className="gap-2 p-5 md:p-6" testID="verification-complete">
+                <Box className="flex-row flex-wrap items-center gap-2">
+                  <Text variant="heading">Identity verified</Text>
+                  <Badge>Verified</Badge>
+                </Box>
+                <Text variant="body">
+                  {customer.displayName} can continue to protected account settings and checkout details.
+                </Text>
+              </Card>
             ) : null}
-          </Card>
+          </>
         ) : null}
       </Box>
     </Screen>
