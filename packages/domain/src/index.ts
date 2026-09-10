@@ -134,6 +134,8 @@ export interface Promotion {
 export type PaymentState = 'pending' | 'paid' | 'failed' | 'refunded';
 export type FulfillmentState = 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 export type OrderState = 'draft' | 'placed' | 'cancelled' | 'completed';
+export type ShippingMethod = 'standard' | 'express';
+export type PaymentMethod = 'card' | 'wallet';
 
 export interface OrderLine {
   id: Id;
@@ -159,6 +161,8 @@ export interface Order {
   paymentState: PaymentState;
   fulfillmentState: FulfillmentState;
   shippingAddress: Address;
+  shippingMethod?: ShippingMethod;
+  paymentMethod?: PaymentMethod;
   placedAt: IsoDateTime;
   updatedAt: IsoDateTime;
 }

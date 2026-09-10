@@ -11,6 +11,7 @@ import { AccountVerificationConformance } from './AccountVerificationConformance
 import { App } from './App';
 import { CartManagementConformance } from './CartManagementConformance';
 import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
+import { CheckoutConformance } from './CheckoutConformance';
 import { CollectionDiscoveryConformance } from './CollectionDiscoveryConformance';
 import { LayoutActionsConformance } from './LayoutActionsConformance';
 import { OrderHistoryConformance } from './OrderHistoryConformance';
@@ -42,6 +43,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/cart') {
     return <CartManagementConformance />;
+  }
+  if (window.location.pathname === '/conformance/checkout') {
+    return <CheckoutConformance />;
   }
   if (window.location.pathname === '/conformance/orders' || window.location.pathname.startsWith('/conformance/orders/')) {
     return <OrderHistoryConformance />;

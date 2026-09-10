@@ -5,6 +5,7 @@ import { handleAdminLifecycle } from './admin-lifecycle';
 import { handleCartLifecycle } from './cart-lifecycle';
 import { handleCatalogExtra } from './catalog-extra';
 import { handleChatLifecycle } from './chat-lifecycle';
+import { handleCheckoutLifecycle } from './checkout-lifecycle';
 import coreWorker from './index';
 import { handleOrderLifecycle } from './order-lifecycle';
 import {
@@ -64,6 +65,8 @@ export default {
     if (adminResponse) return adminResponse;
     const orderResponse = await handleOrderLifecycle(request, env);
     if (orderResponse) return orderResponse;
+    const checkoutResponse = await handleCheckoutLifecycle(request, env);
+    if (checkoutResponse) return checkoutResponse;
     const cartResponse = await handleCartLifecycle(request, env);
     if (cartResponse) return cartResponse;
     const catalogResponse = await handleCatalogExtra(request, env);
