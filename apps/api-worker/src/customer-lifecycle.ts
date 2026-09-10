@@ -140,6 +140,13 @@ export async function handleCustomerLifecycle(
   if (!displayName) return fail(request, env, 400, 'INVALID_CUSTOMER_NAME', 'Display name is required.');
   if (!validEmail(email)) return fail(request, env, 400, 'INVALID_CUSTOMER_EMAIL', 'A valid email address is required.');
 
+  if (email !== customer.email) {
+    const duplicate = await env.DB.prepare('SELECT id FROM customers WHERE email = ? AND id <> ?')
+      .bind(email, customer.id)
+      .first<{ id: string }>();
+    if (duplicate) return fail(request, env, 409, 'CUSTOMER_EMAIL_IN_USE', 'That email address is already in use.');
+  }
+
   let addresses = customer.addresses;
   if (body.address) {
     const index = customer.addresses.findIndex((address) => address.id === body.address!.id);
