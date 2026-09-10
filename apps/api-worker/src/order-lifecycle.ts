@@ -1,10 +1,11 @@
 import type { ApiFailure, ApiSuccess, CustomerCancelOrderInput } from '@beeecom/contracts';
 import type { Customer, Order } from '@beeecom/domain';
 
+interface D1Result<T = unknown> { results: T[]; success: boolean }
 interface D1PreparedStatement {
   bind(...values: Array<string | number | null>): D1PreparedStatement;
   first<T = Record<string, unknown>>(): Promise<T | null>;
-  run<T = unknown>(): Promise<T>;
+  run<T = unknown>(): Promise<D1Result<T>>;
 }
 interface D1Database { prepare(query: string): D1PreparedStatement }
 export interface OrderLifecycleEnv { DB: D1Database; DEFAULT_SCENARIO?: string; CORS_ORIGINS?: string }
