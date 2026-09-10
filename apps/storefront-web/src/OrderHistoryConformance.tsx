@@ -2,6 +2,14 @@ import { createBeeEcomClient } from '@beeecom/api-client';
 import { formatMoney } from '@beeecom/app-ui';
 import type { Customer, Order } from '@beeecom/domain';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Badge,
   Box,
   Breadcrumb,
@@ -10,6 +18,7 @@ import {
   Card,
   DescriptionItem,
   DescriptionList,
+  Input,
   ListGroup,
   ListGroupHeader,
   ListItem,
@@ -46,7 +55,10 @@ export function OrderHistoryConformance() {
   const [customer, setCustomer] = React.useState<Customer | null>(null);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = React.useState('Ordered by mistake');
   const orderId = orderIdFromPath();
   const selectedOrder = orderId ? orders.find((order) => order.id === orderId) : undefined;
 
@@ -74,6 +86,29 @@ export function OrderHistoryConformance() {
     };
   }, []);
 
+  async function cancelOrder() {
+    if (!selectedOrder || cancellationReason.trim().length < 5) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const updated = await api.orders.cancel(selectedOrder.id, {
+        customerId: CUSTOMER_ID,
+        reason: cancellationReason.trim(),
+      });
+      setOrders((current) => current.map((order) => order.id === updated.id ? updated : order));
+      setNotice(`Order ${updated.number} cancelled. The demo payment is marked as refunded.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to cancel this order.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const canCustomerCancel = selectedOrder?.state === 'placed'
+    && selectedOrder.paymentState === 'paid'
+    && selectedOrder.fulfillmentState === 'unfulfilled';
+
   return (
     <Screen>
       <Box className="mx-auto w-full max-w-5xl gap-6 p-4 md:p-8">
@@ -94,6 +129,12 @@ export function OrderHistoryConformance() {
               : 'Track recent purchases and open an order for full details.'}
           </Text>
         </Box>
+
+        {notice ? (
+          <Card className="p-4" testID="order-notice">
+            <Text variant="body">{notice}</Text>
+          </Card>
+        ) : null}
 
         {loading ? (
           <Card className="p-5 md:p-6">
@@ -180,6 +221,42 @@ export function OrderHistoryConformance() {
                     />
                   ))}
                 </ListGroup>
+
+                {canCustomerCancel ? (
+                  <Box className="gap-3 rounded-lg border border-border p-4" testID="order-cancel-action">
+                    <Box className="gap-1">
+                      <Text variant="heading">Need to cancel?</Text>
+                      <Text variant="body">You can cancel before fulfillment starts. A paid demo order is refunded when cancellation succeeds.</Text>
+                    </Box>
+                    <Input
+                      accessibilityLabel="Cancellation reason"
+                      value={cancellationReason}
+                      onChangeText={setCancellationReason}
+                      placeholder="Why are you cancelling?"
+                    />
+                    <Box className="self-start">
+                      <AlertDialog>
+                        <AlertDialogTrigger
+                          variant="outline"
+                          disabled={busy || cancellationReason.trim().length < 5}
+                          accessibilityLabel={`Cancel order ${selectedOrder.number}`}
+                        >
+                          Cancel order
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogTitle>Cancel order {selectedOrder.number}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This stops fulfillment for this demo order and marks its paid amount as refunded. This action cannot be undone.
+                          </AlertDialogDescription>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep order</AlertDialogCancel>
+                            <AlertDialogAction disabled={busy} onPress={() => void cancelOrder()}>Confirm cancellation</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </Box>
+                  </Box>
+                ) : null}
 
                 {selectedOrder.paymentState === 'paid' ? (
                   <Box className="gap-3 rounded-lg border border-border p-4" testID="order-review-actions">

@@ -10,6 +10,13 @@ describe('deterministic demo datasets', () => {
     const lowStock = createDemoDataset('low-stock');
     expect(lowStock.products.some((product) => product.variants.some((item) => item.inventoryState === 'low-stock'))).toBe(true);
 
+    const cancellationEligible = createDemoDataset('cancellation-eligible');
+    expect(cancellationEligible.orders[0]).toMatchObject({
+      state: 'placed',
+      paymentState: 'paid',
+      fulfillmentState: 'unfulfilled',
+    });
+
     const empty = createDemoDataset('empty-catalog');
     expect(empty.products).toHaveLength(0);
 
