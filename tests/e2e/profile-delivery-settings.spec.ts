@@ -109,6 +109,20 @@ test.describe('Profile and delivery settings product flow', () => {
     expect(persisted.addresses.find((item) => item.id === 'addr-ava-home')?.isDefault).toBe(true);
   });
 
+  test('customer update endpoint rejects an email already owned by another customer', async () => {
+    const api = await playwrightRequest.newContext({ baseURL: API });
+    const response = await api.patch('/api/v1/customers/cust-ava', {
+      data: { email: 'minh@example.test' },
+    });
+    expect(response.status()).toBe(409);
+    const body = await response.json() as { ok: false; error: { code: string } };
+    expect(body.error.code).toBe('CUSTOMER_EMAIL_IN_USE');
+    await api.dispose();
+
+    const persisted = await getCustomer();
+    expect(persisted.email).toBe('ava@example.test');
+  });
+
   test('settings reflow at 390px, pass serious/critical axe and produce visual evidence', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${STOREFRONT}/conformance/account-settings`);
