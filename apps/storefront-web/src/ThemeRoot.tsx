@@ -6,6 +6,7 @@ import {
 } from '@beeecom/app-ui';
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
+import { AccountVerificationConformance } from './AccountVerificationConformance';
 import { App } from './App';
 import { CatalogDiscoveryConformance } from './CatalogDiscoveryConformance';
 import { LayoutActionsConformance } from './LayoutActionsConformance';
@@ -26,6 +27,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/catalog-discovery') {
     return <CatalogDiscoveryConformance />;
+  }
+  if (window.location.pathname === '/conformance/account-verification') {
+    return <AccountVerificationConformance />;
   }
   return <App />;
 }
