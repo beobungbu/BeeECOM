@@ -50,10 +50,10 @@ test.describe('BeeUI status and loading contracts in the storefront', () => {
     await expect(alert).toHaveAttribute('aria-live', 'polite');
     await expect(alert).toContainText('2 low-stock variants · 1 out-of-stock variants');
 
-    await expect(page.getByText('Products').locator('..')).toContainText('4');
-    await expect(page.getByText('Variants').locator('..')).toContainText('8');
-    await expect(page.getByText('Available units').locator('..')).toContainText('95');
-    await expect(page.getByText('Needs attention').locator('..')).toContainText('3');
+    await expect(page.getByTestId('products-stat')).toContainText('Products4Canonical catalog rows');
+    await expect(page.getByTestId('variants-stat')).toContainText('Variants8Purchasable SKU records');
+    await expect(page.getByTestId('available-units-stat')).toContainText('Available units95Inventory quantity sum');
+    await expect(page.getByTestId('attention-stat')).toContainText('Needs attention3Low or out-of-stock variants');
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
