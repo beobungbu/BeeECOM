@@ -7,6 +7,7 @@ import {
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
 import { App } from './App';
+import { LayoutActionsConformance } from './LayoutActionsConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -17,6 +18,13 @@ function readStoredPreference(): ThemePreference {
 
 const initialPreference = readStoredPreference();
 applyThemePreference(initialPreference);
+
+function CurrentSurface() {
+  if (window.location.pathname === '/conformance/layout-actions') {
+    return <LayoutActionsConformance />;
+  }
+  return <App />;
+}
 
 export function ThemeRoot() {
   const [preference, setPreference] = React.useState<ThemePreference>(initialPreference);
@@ -29,7 +37,7 @@ export function ThemeRoot() {
 
   return (
     <BeeUIProvider>
-      <App />
+      <CurrentSurface />
       <ThemePreferenceControl preference={preference} onPreferenceChange={changePreference} />
     </BeeUIProvider>
   );
