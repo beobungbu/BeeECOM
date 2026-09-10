@@ -1,7 +1,7 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
-const storefrontUrl = 'http://127.0.0.1:5173';
-const adminUrl = 'http://127.0.0.1:5174';
+const storefrontUrl = 'http://127.0.0.1:5173/conformance/theme-preference';
+const adminUrl = 'http://127.0.0.1:5174/conformance/theme-preference';
 const storageKey = 'beeecom.theme.preference';
 
 async function themeLabelColor(page: Page): Promise<string> {
@@ -45,7 +45,6 @@ test.describe('BeeUI theme preference conformance', () => {
     await expect(page.getByText('Theme preference: Light')).toBeVisible();
     await expect.poll(() => themeLabelColor(page)).toBe(systemLightColor);
 
-    // An explicit Light preference must ignore a dark OS/browser preference.
     await page.emulateMedia({ colorScheme: 'dark' });
     await expect.poll(() => themeLabelColor(page)).toBe(systemLightColor);
 
@@ -53,11 +52,9 @@ test.describe('BeeUI theme preference conformance', () => {
     await expect(page.getByText('Theme preference: Dark')).toBeVisible();
     await expect.poll(() => themeLabelColor(page)).toBe(systemDarkColor);
 
-    // An explicit Dark preference must ignore a light OS/browser preference.
     await page.emulateMedia({ colorScheme: 'light' });
     await expect.poll(() => themeLabelColor(page)).toBe(systemDarkColor);
 
-    // `system` is the important restore path missing from current BeeUI docs/LLM guidance.
     await page.getByRole('button', { name: 'Use System theme' }).click();
     await expect(page.getByText('Theme preference: System')).toBeVisible();
     await expect.poll(() => themeLabelColor(page)).toBe(systemLightColor);
