@@ -83,7 +83,7 @@ export function App() {
       if (nextThreadId) await loadMessages(nextThreadId);
       else setMessages([]);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to load Admin state.');
+      setError(cause instanceof Error ? cause.message : 'Unable to load the operations workspace.');
     } finally {
       setLoading(false);
     }
@@ -157,9 +157,9 @@ export function App() {
       });
       setMessages((current) => appendMessage(current, message));
       setAgentDraft('');
-      showNotice('Reply persisted to D1 and published to connected customer clients.');
+      showNotice('Reply sent to customer.');
     } catch (cause) {
-      showError(cause instanceof Error ? cause.message : 'Unable to persist support reply.');
+      showError(cause instanceof Error ? cause.message : 'Unable to send support reply.');
     } finally { setBusy(false); }
   }
 
@@ -169,26 +169,27 @@ export function App() {
   const exceptionOrders = orders.filter((order) => order.paymentState === 'failed' || order.fulfillmentState === 'cancelled').length;
   const selectedThread = threadId ? threads.find((thread) => thread.id === threadId) : undefined;
   const customerOrders = selectedThread ? orders.filter((order) => order.customerId === selectedThread.customerId) : [];
+  const chatStatusLabel = chatStatus === 'connected' ? 'Live' : chatStatus === 'closed' ? 'Offline' : 'Connecting…';
 
   return (
     <Screen>
       <Box className="mx-auto w-full max-w-screen-2xl gap-6 p-4 md:p-8">
         <Box className="flex-row flex-wrap items-center justify-between gap-4">
-          <Box className="gap-1">
+          <Box className="min-w-0 max-w-3xl gap-1">
             <Box className="flex-row flex-wrap items-center gap-3">
               <Text variant="title">BeeECOM Admin</Text>
-              <Badge>Shared D1 operations</Badge>
+              <Badge>Operations workspace</Badge>
             </Box>
-            <Text variant="body">Persisted catalog, inventory, promotions, orders, customers, returns, reviews and support operations.</Text>
+            <Text variant="body">Monitor catalog, inventory, campaigns, orders and customer support from one workspace.</Text>
           </Box>
-          <Button onPress={() => void refresh()}>Refresh canonical state</Button>
+          <Button onPress={() => void refresh()}>Refresh dashboard</Button>
         </Box>
 
         {notice ? <Card className="p-4"><Text variant="body">{notice}</Text></Card> : null}
         {error ? (
           <Card className="gap-3 p-5">
             <Text variant="title">Operation failed</Text><Text variant="body">{error}</Text>
-            <Button onPress={() => void refresh()}>Reload state</Button>
+            <Button onPress={() => void refresh()}>Try again</Button>
           </Card>
         ) : null}
 
@@ -200,7 +201,7 @@ export function App() {
           <Card className="gap-1 p-5"><Text variant="body">Order exceptions</Text><Text variant="title">{exceptionOrders}</Text></Card>
         </Box>
 
-        {loading ? <Card className="p-6"><Text variant="body">Loading operations state…</Text></Card> : null}
+        {loading ? <Card className="p-6"><Text variant="body">Loading operations…</Text></Card> : null}
 
         {!loading ? (
           <OperationsPanels
@@ -216,7 +217,7 @@ export function App() {
 
         {!loading ? (
           <Card className="gap-4 p-4 md:p-6">
-            <Box className="gap-1"><Text variant="title">Dense inventory view</Text><Text variant="body">The narrow-width strategy keeps the operations table within an explicit scrollable page composition.</Text></Box>
+            <Box className="gap-1"><Text variant="title">Inventory</Text><Text variant="body">Variant-level pricing, stock and availability across the catalog.</Text></Box>
             <Table accessibilityLabel="Product catalog inventory table">
               <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>SKU</TableHead><TableHead>Price</TableHead><TableHead>Stock</TableHead><TableHead>State</TableHead></TableRow></TableHeader>
               <TableBody>{products.flatMap((product) => product.variants.map((variant) => (
@@ -229,8 +230,8 @@ export function App() {
         {!loading ? (
           <Card className="gap-4 p-4 md:p-6">
             <Box className="gap-1">
-              <Box className="flex-row flex-wrap items-center gap-2"><Text variant="title">Support inbox</Text><Badge>{chatStatus}</Badge></Box>
-              <Text variant="body">D1 history is canonical; Durable Objects fan out persisted messages and reconnect resyncs history.</Text>
+              <Box className="flex-row flex-wrap items-center gap-2"><Text variant="title">Support inbox</Text><Badge>{chatStatusLabel}</Badge></Box>
+              <Text variant="body">Open conversations, review customer context and reply without leaving the workspace.</Text>
             </Box>
             {threadId ? (
               <>
