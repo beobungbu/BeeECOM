@@ -19,6 +19,15 @@ async function resetHealthy() {
   await api.dispose();
 }
 
+async function deliverOrder() {
+  const api = await playwrightRequest.newContext({ baseURL: API });
+  const response = await api.patch(`/api/v1/admin/orders/${ORDER_ID}`, {
+    data: { action: 'deliver' },
+  });
+  expect(response.ok()).toBeTruthy();
+  await api.dispose();
+}
+
 async function adminReviews() {
   const api = await playwrightRequest.newContext({ baseURL: API });
   const response = await api.get('/api/v1/admin/reviews');
@@ -58,18 +67,20 @@ async function attachFullPage(page: Page, testInfo: TestInfo, name: string) {
 test.describe('Customer product review submission', () => {
   test.beforeEach(async () => {
     await resetHealthy();
+    await deliverOrder();
   });
 
-  test('verified purchaser enters from order detail and submits a pending review that persists', async ({ page }) => {
+  test('verified recipient enters from delivered order detail and submits a pending review that persists', async ({ page }) => {
     await page.goto(`${STOREFRONT}/conformance/orders/${ORDER_ID}`);
     await expect(page.getByTestId('order-detail-items')).toContainText('Field Pack');
+    await expect(page.getByTestId('order-progress-timeline')).toContainText('Delivered');
     await page.getByRole('button', { name: 'Review Field Pack' }).click();
     await expect(page).toHaveURL(`${STOREFRONT}${REVIEW_PATH}`);
 
     await expect(page.getByRole('heading', { name: 'Review your purchase' })).toBeVisible();
     await expect(page.getByTestId('review-purchase-summary')).toContainText('Field Pack');
     await expect(page.getByTestId('review-purchase-summary')).toContainText('Order #1001');
-    await expect(page.getByText('Verified purchase')).toBeVisible();
+    await expect(page.getByText('Verified delivery')).toBeVisible();
 
     const group = page.getByRole('radiogroup');
     await expect(group).toBeVisible();
@@ -137,6 +148,24 @@ test.describe('Customer product review submission', () => {
 
     const persisted = (await adminReviews()).filter((review) => review.productId === PRODUCT_ID && review.customerId === CUSTOMER_ID);
     expect(persisted).toHaveLength(1);
+  });
+
+  test('API rejects review submission before a purchased product is delivered', async () => {
+    await resetHealthy();
+    const api = await playwrightRequest.newContext({ baseURL: API });
+    const response = await api.post('/api/v1/reviews', {
+      data: {
+        productId: PRODUCT_ID,
+        customerId: CUSTOMER_ID,
+        rating: 5,
+        title: 'Too early',
+        body: 'This paid order has shipped but has not been delivered yet.',
+      },
+    });
+    expect(response.status()).toBe(403);
+    const body = await response.json() as { ok: false; error: { code: string } };
+    expect(body.error.code).toBe('REVIEW_DELIVERY_REQUIRED');
+    await api.dispose();
   });
 
   test('API rejects review submission when the customer has not purchased the product', async () => {
