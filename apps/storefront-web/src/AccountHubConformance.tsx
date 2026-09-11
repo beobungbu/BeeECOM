@@ -179,7 +179,7 @@ export function AccountHubConformance() {
               testID="account-saved-section"
               title="Saved items"
               description="Keep favorites close so you can return to them later."
-              action={<Link onPress={() => navigate('/conformance/collections')}>Keep shopping</Link>}
+              action={<Link onPress={() => navigate('/conformance/saved-items')}>Manage saved</Link>}
             >
               <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {savedProducts.length > 0 ? savedProducts.map((product) => (
