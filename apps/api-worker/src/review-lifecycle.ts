@@ -128,11 +128,21 @@ async function createReview(request: Request, env: ReviewLifecycleEnv): Promise<
   const orderRows = await env.DB.prepare('SELECT data_json FROM orders WHERE customer_id = ? ORDER BY placed_at DESC')
     .bind(customer.id)
     .all<{ data_json: string }>();
-  const purchased = orderRows.results
-    .map((row) => parseJson<Order>(row.data_json))
-    .some((order) => order.paymentState === 'paid' && order.lines.some((line) => line.productId === product.id));
+  const customerOrders = orderRows.results.map((row) => parseJson<Order>(row.data_json));
+  const purchased = customerOrders.some(
+    (order) => order.paymentState === 'paid' && order.lines.some((line) => line.productId === product.id),
+  );
   if (!purchased) {
     return fail(request, env, 403, 'REVIEW_PURCHASE_REQUIRED', 'Only purchased products can be reviewed.');
+  }
+
+  const delivered = customerOrders.some(
+    (order) => order.paymentState === 'paid'
+      && order.fulfillmentState === 'delivered'
+      && order.lines.some((line) => line.productId === product.id),
+  );
+  if (!delivered) {
+    return fail(request, env, 403, 'REVIEW_DELIVERY_REQUIRED', 'Reviews are available after the purchased product has been delivered.');
   }
 
   const review: Review = {

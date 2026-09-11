@@ -24,6 +24,8 @@ import {
   ListItem,
   Screen,
   Text,
+  Timeline,
+  TimelineItem,
 } from '@beemvp/beeui-ui';
 import * as React from 'react';
 
@@ -49,6 +51,82 @@ function statusLabel(order: Order) {
   if (order.fulfillmentState === 'processing') return 'Processing';
   if (order.fulfillmentState === 'cancelled') return 'Cancelled';
   return 'Order placed';
+}
+
+function formatOrderDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  }).format(date)} UTC`;
+}
+
+function shippingMethodLabel(order: Order) {
+  if (order.shippingMethod === 'express') return 'Express delivery';
+  if (order.shippingMethod === 'standard') return 'Standard delivery';
+  return 'Not recorded';
+}
+
+function paymentMethodLabel(order: Order) {
+  if (order.paymentMethod === 'wallet') return 'Wallet';
+  if (order.paymentMethod === 'card') return 'Card';
+  return 'Not recorded';
+}
+
+function paymentTimeline(order: Order) {
+  if (order.paymentState === 'paid') {
+    return { title: 'Payment confirmed', description: paymentMethodLabel(order), status: 'success' as const };
+  }
+  if (order.paymentState === 'failed') {
+    return { title: 'Payment needs attention', description: 'The last payment attempt did not complete.', status: 'destructive' as const };
+  }
+  if (order.paymentState === 'refunded') {
+    return { title: 'Payment refunded', description: paymentMethodLabel(order), status: 'primary' as const };
+  }
+  return { title: 'Payment pending', description: paymentMethodLabel(order), status: 'default' as const };
+}
+
+function fulfillmentTimeline(order: Order) {
+  switch (order.fulfillmentState) {
+    case 'processing':
+      return {
+        title: 'Preparing your order',
+        description: 'Your items are being prepared for shipment.',
+        status: 'primary' as const,
+      };
+    case 'shipped':
+      return {
+        title: 'On the way',
+        description: order.shippingMethod
+          ? `Your order has shipped with ${shippingMethodLabel(order).toLowerCase()}.`
+          : 'Your order has shipped.',
+        status: 'primary' as const,
+      };
+    case 'delivered':
+      return {
+        title: 'Delivered',
+        description: `Delivered to ${order.shippingAddress.city}, ${order.shippingAddress.region}.`,
+        status: 'success' as const,
+      };
+    case 'cancelled':
+      return {
+        title: 'Fulfillment cancelled',
+        description: 'This order will not be shipped.',
+        status: 'destructive' as const,
+      };
+    default:
+      return {
+        title: 'Fulfillment pending',
+        description: 'Fulfillment has not started yet.',
+        status: 'default' as const,
+      };
+  }
 }
 
 export function OrderHistoryConformance() {
@@ -133,6 +211,11 @@ export function OrderHistoryConformance() {
   const canRetryPayment = selectedOrder?.state === 'placed'
     && selectedOrder.paymentState === 'failed'
     && selectedOrder.fulfillmentState === 'unfulfilled';
+  const canReview = selectedOrder?.paymentState === 'paid'
+    && selectedOrder.fulfillmentState === 'delivered';
+
+  const paymentProgress = selectedOrder ? paymentTimeline(selectedOrder) : null;
+  const fulfillmentProgress = selectedOrder ? fulfillmentTimeline(selectedOrder) : null;
 
   return (
     <Screen>
@@ -150,7 +233,7 @@ export function OrderHistoryConformance() {
           <Text variant="title">{orderId ? `Order ${selectedOrder?.number ?? ''}`.trim() : 'Your orders'}</Text>
           <Text variant="body">
             {orderId
-              ? 'Review order status, items, delivery address and payment summary.'
+              ? 'Review order status, items, delivery progress and payment details.'
               : 'Track recent purchases and open an order for full details.'}
           </Text>
         </Box>
@@ -218,13 +301,13 @@ export function OrderHistoryConformance() {
           </Card>
         ) : null}
 
-        {!loading && !error && customer && selectedOrder ? (
+        {!loading && !error && customer && selectedOrder && paymentProgress && fulfillmentProgress ? (
           <Box className="gap-5">
             <Card className="gap-4 p-5 md:p-6">
               <Box className="flex-row flex-wrap items-start justify-between gap-3">
                 <Box className="min-w-0 flex-1 gap-1">
                   <Text variant="heading">{selectedOrder.number}</Text>
-                  <Text variant="body">Placed {selectedOrder.placedAt}</Text>
+                  <Text variant="body">Placed {formatOrderDate(selectedOrder.placedAt)}</Text>
                 </Box>
                 <Box className="flex-row flex-wrap gap-2">
                   <Badge>{selectedOrder.paymentState}</Badge>
@@ -234,6 +317,33 @@ export function OrderHistoryConformance() {
               <Text variant="body">
                 {statusLabel(selectedOrder)} · {selectedOrder.lines.length} item{selectedOrder.lines.length === 1 ? '' : 's'}
               </Text>
+            </Card>
+
+            <Card className="gap-4 p-5 md:p-6" testID="order-progress-card">
+              <Box className="gap-1">
+                <Text variant="heading">Order progress</Text>
+                <Text variant="body">The latest persisted status for payment and fulfillment.</Text>
+              </Box>
+              <Timeline accessibilityLabel={`Progress for order ${selectedOrder.number}`} testID="order-progress-timeline">
+                <TimelineItem
+                  title="Order placed"
+                  description="We received your order."
+                  meta={formatOrderDate(selectedOrder.placedAt)}
+                  status="success"
+                />
+                <TimelineItem
+                  title={paymentProgress.title}
+                  description={paymentProgress.description}
+                  meta={`Payment status: ${selectedOrder.paymentState}`}
+                  status={paymentProgress.status}
+                />
+                <TimelineItem
+                  title={fulfillmentProgress.title}
+                  description={fulfillmentProgress.description}
+                  meta={`Updated ${formatOrderDate(selectedOrder.updatedAt)}`}
+                  status={fulfillmentProgress.status}
+                />
+              </Timeline>
             </Card>
 
             <Box className="gap-5 lg:flex-row lg:items-start">
@@ -308,11 +418,11 @@ export function OrderHistoryConformance() {
                   </Box>
                 ) : null}
 
-                {selectedOrder.paymentState === 'paid' ? (
+                {canReview ? (
                   <Box className="gap-3 rounded-lg border border-border p-4" testID="order-review-actions">
                     <Box className="gap-1">
                       <Text variant="heading">Share your experience</Text>
-                      <Text variant="body">Review a purchased item to help other shoppers.</Text>
+                      <Text variant="body">Review a delivered item to help other shoppers.</Text>
                     </Box>
                     <Box className="flex-row flex-wrap gap-2">
                       {selectedOrder.lines.map((line) => (
@@ -355,6 +465,8 @@ export function OrderHistoryConformance() {
                     <DescriptionItem label="Subtotal" value={formatMoney(selectedOrder.subtotal)} />
                     <DescriptionItem label="Discount" value={formatMoney(selectedOrder.discount)} />
                     <DescriptionItem label="Shipping" value={formatMoney(selectedOrder.shipping)} />
+                    <DescriptionItem label="Delivery method" value={shippingMethodLabel(selectedOrder)} />
+                    <DescriptionItem label="Payment method" value={paymentMethodLabel(selectedOrder)} />
                     <DescriptionItem label="Tax" value={formatMoney(selectedOrder.tax)} />
                     <DescriptionItem label="Total" value={formatMoney(selectedOrder.total)} />
                   </DescriptionList>
