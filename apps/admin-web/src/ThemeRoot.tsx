@@ -6,6 +6,7 @@ import {
 } from '@beeecom/app-ui';
 import { BeeUIProvider } from '@beemvp/beeui-ui';
 import * as React from 'react';
+import { AdminShell } from './AdminShell';
 import { App } from './App';
 import { CampaignSchedulingConformance } from './CampaignSchedulingConformance';
 import { CatalogFormConformance } from './CatalogFormConformance';
@@ -26,37 +27,55 @@ function readStoredPreference(): ThemePreference {
 const initialPreference = readStoredPreference();
 applyThemePreference(initialPreference);
 
+function normalizedPath(): string {
+  const path = window.location.pathname.replace(/\/+$/, '');
+  return path || '/';
+}
+
 function CurrentSurface() {
-  if (window.location.pathname === '/conformance/forms') {
+  const path = normalizedPath();
+
+  if (path === '/') {
+    return <AdminShell section="operations"><App /></AdminShell>;
+  }
+  if (path === '/catalog') {
+    return <AdminShell section="catalog"><CatalogInventoryCenter /></AdminShell>;
+  }
+  if (path === '/promotions') {
+    return <AdminShell section="promotions"><PromotionsCenter /></AdminShell>;
+  }
+
+  if (path === '/conformance/forms') {
     return <CatalogFormConformance />;
   }
-  if (window.location.pathname === '/conformance/catalog-inventory') {
+  if (path === '/conformance/catalog-inventory') {
     return <CatalogInventoryCenter />;
   }
-  if (window.location.pathname === '/conformance/review-identity') {
+  if (path === '/conformance/review-identity') {
     return <ReviewIdentityConformance />;
   }
-  if (window.location.pathname === '/conformance/customer-segmentation') {
+  if (path === '/conformance/customer-segmentation') {
     return <CustomerSegmentationConformance />;
   }
-  if (window.location.pathname === '/conformance/return-operations') {
+  if (path === '/conformance/return-operations') {
     return <ReturnOperationsConformance />;
   }
-  if (window.location.pathname === '/conformance/inventory-health') {
+  if (path === '/conformance/inventory-health') {
     return <InventoryHealthConformance />;
   }
-  if (window.location.pathname === '/conformance/campaign-scheduling') {
+  if (path === '/conformance/campaign-scheduling') {
     return <CampaignSchedulingConformance />;
   }
-  if (window.location.pathname === '/conformance/promotions') {
+  if (path === '/conformance/promotions') {
     return <PromotionsCenter />;
   }
-  return <App />;
+
+  return <AdminShell section="operations"><App /></AdminShell>;
 }
 
 export function ThemeRoot() {
   const [preference, setPreference] = React.useState<ThemePreference>(initialPreference);
-  const showThemeHarness = window.location.pathname === '/conformance/theme-preference';
+  const showThemeHarness = normalizedPath() === '/conformance/theme-preference';
 
   const changePreference = React.useCallback((next: ThemePreference) => {
     applyThemePreference(next);
