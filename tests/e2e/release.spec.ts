@@ -275,13 +275,40 @@ test.describe('Keyboard, responsive and accessibility release smoke', () => {
     await expect(page.getByLabel('Product variant')).toBeVisible();
   });
 
-  test('Admin starts keyboard traversal at the dashboard refresh control', async ({ page }) => {
+  test('Admin keyboard traversal reaches primary navigation and dashboard controls', async ({ page }) => {
     await page.goto(ADMIN);
     await expect(page.getByText('BeeECOM Admin')).toBeVisible();
     await expect(page.getByText(/^Theme preference:/)).toHaveCount(0);
 
+    const brand = page.getByRole('link', { name: 'BeeECOM Admin' });
+    const catalog = page.getByRole('navigation', { name: 'Admin primary navigation' })
+      .getByRole('link', { name: /Catalog & inventory/ });
+    const refresh = page.getByRole('button', { name: 'Refresh dashboard' });
+
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Refresh dashboard' })).toBeFocused();
+    await expect(brand).toBeFocused();
+
+    let reachedCatalog = false;
+    for (let index = 0; index < 6; index += 1) {
+      await page.keyboard.press('Tab');
+      if (await catalog.evaluate((element) => element === document.activeElement)) {
+        reachedCatalog = true;
+        break;
+      }
+    }
+    expect(reachedCatalog, 'catalog navigation should be keyboard reachable from the shell brand').toBe(true);
+    await expect(catalog).toBeFocused();
+
+    let reachedRefresh = false;
+    for (let index = 0; index < 6; index += 1) {
+      await page.keyboard.press('Tab');
+      if (await refresh.evaluate((element) => element === document.activeElement)) {
+        reachedRefresh = true;
+        break;
+      }
+    }
+    expect(reachedRefresh, 'dashboard refresh should remain keyboard reachable after primary navigation').toBe(true);
+    await expect(refresh).toBeFocused();
   });
 
   test('storefront stays within a 360px phone viewport and has no serious/critical axe violations', async ({ page }) => {
