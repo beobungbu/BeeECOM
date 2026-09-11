@@ -74,6 +74,8 @@ export interface AdminPromotionCreateInput {
 export interface AdminPromotionUpdateInput {
   title?: string | undefined;
   description?: string | undefined;
+  kind?: PromotionKind | undefined;
+  value?: number | undefined;
   active?: boolean | undefined;
   startsAt?: string | undefined;
   endsAt?: string | undefined;
