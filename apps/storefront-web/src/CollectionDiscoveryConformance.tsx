@@ -218,7 +218,7 @@ export function CollectionDiscoveryConformance() {
             </Box>
             <Box className="flex-row flex-wrap items-center gap-2">
               <Button
-                variant={selectedIsSaved ? 'outline' : 'default'}
+                variant={selectedIsSaved ? 'outline' : 'primary'}
                 disabled={busy || !wishlist}
                 accessibilityLabel={selectedIsSaved
                   ? `Remove ${selectedProduct.title} from saved items`
