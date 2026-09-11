@@ -54,10 +54,10 @@ test.describe('Promotions Center product flow', () => {
     await expect(page.getByText('Promotions', { exact: true }).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'New campaign' }).click();
-    await page.getByLabel('Campaign code').fill('FALL25');
-    await page.getByLabel('Campaign title').fill('Fall 25%');
-    await page.getByLabel('Customer message').fill('Save 25% on selected fall essentials.');
-    await page.getByLabel('Discount percentage').fill('25');
+    await page.getByRole('textbox', { name: 'Campaign code, required' }).fill('FALL25');
+    await page.getByRole('textbox', { name: 'Campaign title, required' }).fill('Fall 25%');
+    await page.getByRole('textbox', { name: 'Customer message, required' }).fill('Save 25% on selected fall essentials.');
+    await page.getByRole('textbox', { name: 'Discount percentage, required' }).fill('25');
     await page.getByRole('button', { name: 'Create campaign' }).click();
 
     await expect(page.getByTestId('promotion-notice')).toContainText('Campaign FALL25 created as inactive.');
@@ -78,9 +78,9 @@ test.describe('Promotions Center product flow', () => {
   test('activating a future campaign changes product status to Scheduled and survives reload', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/promotions`);
     await page.getByRole('button', { name: 'New campaign' }).click();
-    await page.getByLabel('Campaign code').fill('NEXT20');
-    await page.getByLabel('Campaign title').fill('Next 20%');
-    await page.getByLabel('Customer message').fill('A scheduled offer for the next collection.');
+    await page.getByRole('textbox', { name: 'Campaign code, required' }).fill('NEXT20');
+    await page.getByRole('textbox', { name: 'Campaign title, required' }).fill('Next 20%');
+    await page.getByRole('textbox', { name: 'Customer message, required' }).fill('A scheduled offer for the next collection.');
     await page.getByRole('button', { name: 'Create campaign' }).click();
     await page.getByRole('button', { name: 'Activate campaign' }).click();
 
@@ -100,10 +100,10 @@ test.describe('Promotions Center product flow', () => {
   test('editing an existing campaign persists business copy and fixed discount value', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/promotions`);
     await page.getByLabel('Edit campaign WELCOME10').click();
-    await page.getByLabel('Campaign title').fill('Welcome credit');
-    await page.getByLabel('Customer message').fill('A refreshed welcome offer for first-time customers.');
+    await page.getByRole('textbox', { name: 'Campaign title, required' }).fill('Welcome credit');
+    await page.getByRole('textbox', { name: 'Customer message, required' }).fill('A refreshed welcome offer for first-time customers.');
     await page.getByRole('radio', { name: 'Fixed amount off' }).click();
-    await page.getByLabel('Discount amount (USD)').fill('12.50');
+    await page.getByRole('textbox', { name: 'Discount amount (USD), required' }).fill('12.50');
     await page.getByRole('button', { name: 'Save campaign' }).click();
 
     await expect(page.getByTestId('promotion-notice')).toContainText('Campaign WELCOME10 saved.');
