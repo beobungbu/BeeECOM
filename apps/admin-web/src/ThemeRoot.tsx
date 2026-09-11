@@ -11,6 +11,7 @@ import { CampaignSchedulingConformance } from './CampaignSchedulingConformance';
 import { CatalogFormConformance } from './CatalogFormConformance';
 import { CustomerSegmentationConformance } from './CustomerSegmentationConformance';
 import { InventoryHealthConformance } from './InventoryHealthConformance';
+import { PromotionsCenter } from './PromotionsCenter';
 import { ReturnOperationsConformance } from './ReturnOperationsConformance';
 import { ReviewIdentityConformance } from './ReviewIdentityConformance';
 
@@ -42,6 +43,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/campaign-scheduling') {
     return <CampaignSchedulingConformance />;
+  }
+  if (window.location.pathname === '/conformance/promotions') {
+    return <PromotionsCenter />;
   }
   return <App />;
 }
