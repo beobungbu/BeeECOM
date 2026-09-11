@@ -69,6 +69,9 @@ function CurrentSurface() {
   if (path === '/conformance/promotions') {
     return <PromotionsCenter />;
   }
+  if (path.startsWith('/conformance/')) {
+    return <App />;
+  }
 
   return <AdminShell section="operations"><App /></AdminShell>;
 }
