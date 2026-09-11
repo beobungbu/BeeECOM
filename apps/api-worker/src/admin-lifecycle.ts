@@ -1,7 +1,5 @@
 import type {
-  AdminInventoryAdjustInput,
   AdminOrderTransitionInput,
-  AdminProductUpdateInput,
   AdminPromotionUpdateInput,
   AdminReturnTransitionInput,
   AdminReviewModerationInput,
@@ -59,26 +57,50 @@ async function fail(request: Request, env: AdminLifecycleEnv, status: number, co
   return new Response(JSON.stringify(payload), { status, headers: headers(request, env) });
 }
 function parse<T>(value: string): T { return JSON.parse(value) as T }
+function objectBody(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
 async function rowById<T>(env: AdminLifecycleEnv, table: string, id: string): Promise<T | null> {
   const row = await env.DB.prepare(`SELECT data_json FROM ${table} WHERE id = ?`).bind(id).first<{ data_json: string }>();
   return row ? parse<T>(row.data_json) : null;
 }
 
-async function updateProduct(request: Request, env: AdminLifecycleEnv, id: string, input: AdminProductUpdateInput): Promise<Response> {
+async function updateProduct(request: Request, env: AdminLifecycleEnv, id: string, input: Record<string, unknown>): Promise<Response> {
+  if (input.title !== undefined && typeof input.title !== 'string') {
+    return fail(request, env, 400, 'INVALID_PRODUCT_TITLE', 'Product title must be a string.');
+  }
+  if (input.subtitle !== undefined && typeof input.subtitle !== 'string') {
+    return fail(request, env, 400, 'INVALID_PRODUCT_SUBTITLE', 'Product subtitle must be a string.');
+  }
+  if (input.description !== undefined && typeof input.description !== 'string') {
+    return fail(request, env, 400, 'INVALID_PRODUCT_DESCRIPTION', 'Product description must be a string.');
+  }
+  if (input.featured !== undefined && typeof input.featured !== 'boolean') {
+    return fail(request, env, 400, 'INVALID_PRODUCT_FEATURED', 'Product featured must be a boolean.');
+  }
+  if (input.tags !== undefined && (!Array.isArray(input.tags) || !input.tags.every((tag) => typeof tag === 'string'))) {
+    return fail(request, env, 400, 'INVALID_PRODUCT_TAGS', 'Product tags must be an array of strings.');
+  }
+
   const product = await rowById<Product>(env, 'products', id);
   if (!product) return fail(request, env, 404, 'PRODUCT_NOT_FOUND', 'Product was not found.');
-  const title = input.title?.trim();
-  const subtitle = input.subtitle?.trim();
-  const description = input.description?.trim();
+
+  const title = typeof input.title === 'string' ? input.title.trim() : undefined;
+  const subtitle = typeof input.subtitle === 'string' ? input.subtitle.trim() : undefined;
+  const description = typeof input.description === 'string' ? input.description.trim() : undefined;
   if (input.title !== undefined && !title) return fail(request, env, 400, 'INVALID_PRODUCT_TITLE', 'Product title cannot be empty.');
   if (input.description !== undefined && !description) return fail(request, env, 400, 'INVALID_PRODUCT_DESCRIPTION', 'Product description cannot be empty.');
+
+  const tags = Array.isArray(input.tags)
+    ? [...new Set((input.tags as string[]).map((tag) => tag.trim()).filter(Boolean))]
+    : undefined;
   const updated: Product = {
     ...product,
     ...(title ? { title } : {}),
     ...(subtitle ? { subtitle } : {}),
     ...(description ? { description } : {}),
-    ...(input.featured !== undefined ? { featured: input.featured } : {}),
-    ...(input.tags !== undefined ? { tags: [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))] } : {}),
+    ...(typeof input.featured === 'boolean' ? { featured: input.featured } : {}),
+    ...(tags !== undefined ? { tags } : {}),
     updatedAt: new Date().toISOString(),
   };
   await env.DB.prepare('UPDATE products SET title = ?, featured = ?, data_json = ? WHERE id = ?')
@@ -86,15 +108,24 @@ async function updateProduct(request: Request, env: AdminLifecycleEnv, id: strin
   return ok(request, env, updated);
 }
 
-async function adjustInventory(request: Request, env: AdminLifecycleEnv, id: string, input: AdminInventoryAdjustInput): Promise<Response> {
-  if (!input.variantId || !Number.isInteger(input.adjustment) || input.adjustment === 0 || !input.reason.trim()) {
-    return fail(request, env, 400, 'INVALID_INVENTORY_ADJUSTMENT', 'variantId, non-zero integer adjustment and reason are required.');
+async function adjustInventory(request: Request, env: AdminLifecycleEnv, id: string, input: Record<string, unknown>): Promise<Response> {
+  if (typeof input.variantId !== 'string' || !input.variantId.trim()) {
+    return fail(request, env, 400, 'INVALID_INVENTORY_ADJUSTMENT', 'variantId must be a non-empty string.');
   }
+  if (typeof input.adjustment !== 'number' || !Number.isInteger(input.adjustment) || input.adjustment === 0) {
+    return fail(request, env, 400, 'INVALID_INVENTORY_ADJUSTMENT', 'adjustment must be a non-zero integer.');
+  }
+  if (typeof input.reason !== 'string' || !input.reason.trim()) {
+    return fail(request, env, 400, 'INVALID_INVENTORY_ADJUSTMENT', 'reason must be a non-empty string.');
+  }
+
+  const variantId = input.variantId.trim();
+  const adjustment = input.adjustment;
   const product = await rowById<Product>(env, 'products', id);
   if (!product) return fail(request, env, 404, 'PRODUCT_NOT_FOUND', 'Product was not found.');
-  const variant = product.variants.find((item) => item.id === input.variantId);
+  const variant = product.variants.find((item) => item.id === variantId);
   if (!variant) return fail(request, env, 404, 'VARIANT_NOT_FOUND', 'Variant was not found on this product.');
-  const nextQuantity = variant.inventoryQuantity + input.adjustment;
+  const nextQuantity = variant.inventoryQuantity + adjustment;
   if (nextQuantity < 0) return fail(request, env, 409, 'NEGATIVE_INVENTORY', 'Inventory adjustment would make stock negative.');
   const updated: Product = {
     ...product,
@@ -196,12 +227,12 @@ export async function handleAdminLifecycle(request: Request, env: AdminLifecycle
   const path = new URL(request.url).pathname.replace(/\/$/, '') || '/';
   const product = path.match(/^\/api\/v1\/admin\/products\/([^/]+)$/);
   if (request.method === 'PATCH' && product) {
-    const body = await request.json().catch(() => null) as AdminProductUpdateInput | null;
+    const body = objectBody(await request.json().catch(() => null));
     return body ? updateProduct(request, env, decodeURIComponent(product[1]!), body) : fail(request, env, 400, 'INVALID_PRODUCT_UPDATE', 'Product update body is required.');
   }
   const inventory = path.match(/^\/api\/v1\/admin\/products\/([^/]+)\/inventory-adjustments$/);
   if (request.method === 'POST' && inventory) {
-    const body = await request.json().catch(() => null) as AdminInventoryAdjustInput | null;
+    const body = objectBody(await request.json().catch(() => null));
     return body ? adjustInventory(request, env, decodeURIComponent(inventory[1]!), body) : fail(request, env, 400, 'INVALID_INVENTORY_ADJUSTMENT', 'Adjustment body is required.');
   }
   const promotion = path.match(/^\/api\/v1\/admin\/promotions\/([^/]+)$/);
