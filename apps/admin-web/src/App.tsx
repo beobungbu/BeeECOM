@@ -177,7 +177,7 @@ export function App() {
         <Box className="flex-row flex-wrap items-center justify-between gap-4">
           <Box className="min-w-0 max-w-3xl gap-1">
             <Box className="flex-row flex-wrap items-center gap-3">
-              <Text variant="title">BeeECOM Admin</Text>
+              <Text variant="title">Operations</Text>
               <Badge>Operations workspace</Badge>
             </Box>
             <Text variant="body">Monitor catalog, inventory, campaigns, orders and customer support from one workspace.</Text>
