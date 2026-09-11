@@ -1,9 +1,4 @@
-import type {
-  AdminPromotionCreateInput,
-  AdminPromotionUpdateInput,
-  ApiFailure,
-  ApiSuccess,
-} from '@beeecom/contracts';
+import type { ApiFailure, ApiSuccess } from '@beeecom/contracts';
 import type { Promotion, PromotionKind } from '@beeecom/domain';
 
 interface D1Result<T = unknown> { results: T[]; success: boolean }
@@ -49,6 +44,10 @@ async function fail(request: Request, env: PromotionLifecycleEnv, status: number
   return new Response(JSON.stringify(payload), { status, headers: headers(request, env) });
 }
 
+function objectBody(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
 function normalizedCode(value: string): string {
   return value.trim().toUpperCase();
 }
@@ -70,20 +69,41 @@ async function rowById(env: PromotionLifecycleEnv, id: string): Promise<Promotio
 }
 
 async function createPromotion(request: Request, env: PromotionLifecycleEnv): Promise<Response> {
-  const input = await request.json().catch(() => null) as AdminPromotionCreateInput | null;
+  const input = objectBody(await request.json().catch(() => null));
   if (!input) return fail(request, env, 400, 'INVALID_PROMOTION_CREATE', 'Promotion body is required.');
 
-  const code = normalizedCode(input.code ?? '');
-  const title = input.title?.trim();
-  const description = input.description?.trim();
+  if (typeof input.code !== 'string') return fail(request, env, 400, 'INVALID_PROMOTION_CODE', 'Promotion code must be a string.');
+  const code = normalizedCode(input.code);
   if (!/^[A-Z0-9_-]{3,32}$/.test(code)) {
     return fail(request, env, 400, 'INVALID_PROMOTION_CODE', 'Promotion code must be 3–32 characters using A–Z, 0–9, underscore or hyphen.');
   }
+
+  if (typeof input.title !== 'string') return fail(request, env, 400, 'INVALID_PROMOTION_TITLE', 'Promotion title must be a string.');
+  const title = input.title.trim();
   if (!title || title.length > 120) return fail(request, env, 400, 'INVALID_PROMOTION_TITLE', 'Promotion title is required and must be at most 120 characters.');
+
+  if (typeof input.description !== 'string') return fail(request, env, 400, 'INVALID_PROMOTION_DESCRIPTION', 'Promotion description must be a string.');
+  const description = input.description.trim();
   if (!description || description.length > 500) return fail(request, env, 400, 'INVALID_PROMOTION_DESCRIPTION', 'Promotion description is required and must be at most 500 characters.');
-  if (input.kind !== 'percentage' && input.kind !== 'fixed') return fail(request, env, 400, 'INVALID_PROMOTION_KIND', 'Promotion kind must be percentage or fixed.');
-  if (!validValue(input.kind, input.value)) return fail(request, env, 400, 'INVALID_PROMOTION_VALUE', 'Percentage must be 1–100; fixed discount must be a positive whole number of cents.');
-  if (!validWindow(input.startsAt, input.endsAt)) return fail(request, env, 400, 'INVALID_PROMOTION_WINDOW', 'Promotion start must be before end.');
+
+  const kind = input.kind;
+  if (kind !== 'percentage' && kind !== 'fixed') return fail(request, env, 400, 'INVALID_PROMOTION_KIND', 'Promotion kind must be percentage or fixed.');
+
+  const value = input.value;
+  if (typeof value !== 'number' || !validValue(kind, value)) {
+    return fail(request, env, 400, 'INVALID_PROMOTION_VALUE', 'Percentage must be 1–100; fixed discount must be a positive whole number of cents.');
+  }
+
+  if (input.active !== undefined && typeof input.active !== 'boolean') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_ACTIVE', 'Promotion active must be a boolean.');
+  }
+  const active = typeof input.active === 'boolean' ? input.active : false;
+
+  if (typeof input.startsAt !== 'string' || typeof input.endsAt !== 'string' || !validWindow(input.startsAt, input.endsAt)) {
+    return fail(request, env, 400, 'INVALID_PROMOTION_WINDOW', 'Promotion start and end must be valid timestamps with start before end.');
+  }
+  const startsAt = input.startsAt;
+  const endsAt = input.endsAt;
 
   const duplicate = await env.DB.prepare('SELECT id FROM promotions WHERE code = ? LIMIT 1').bind(code).first<{ id: string }>();
   if (duplicate) return fail(request, env, 409, 'PROMOTION_CODE_IN_USE', 'A promotion with this code already exists.');
@@ -93,36 +113,71 @@ async function createPromotion(request: Request, env: PromotionLifecycleEnv): Pr
     code,
     title,
     description,
-    kind: input.kind,
-    value: input.value,
-    active: input.active ?? false,
-    startsAt: new Date(input.startsAt).toISOString(),
-    endsAt: new Date(input.endsAt).toISOString(),
+    kind,
+    value,
+    active,
+    startsAt: new Date(startsAt).toISOString(),
+    endsAt: new Date(endsAt).toISOString(),
   };
 
-  await env.DB.prepare('INSERT INTO promotions (id, code, active, data_json) VALUES (?, ?, ?, ?)')
-    .bind(promotion.id, promotion.code, promotion.active ? 1 : 0, JSON.stringify(promotion))
-    .run();
+  try {
+    await env.DB.prepare('INSERT INTO promotions (id, code, active, data_json) VALUES (?, ?, ?, ?)')
+      .bind(promotion.id, promotion.code, promotion.active ? 1 : 0, JSON.stringify(promotion))
+      .run();
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    if (/UNIQUE constraint failed.*promotions\.code/i.test(message)) {
+      return fail(request, env, 409, 'PROMOTION_CODE_IN_USE', 'A promotion with this code already exists.');
+    }
+    throw cause;
+  }
   return ok(request, env, promotion, 201);
 }
 
 async function updatePromotion(request: Request, env: PromotionLifecycleEnv, id: string): Promise<Response> {
-  const input = await request.json().catch(() => null) as AdminPromotionUpdateInput | null;
+  const input = objectBody(await request.json().catch(() => null));
   if (!input) return fail(request, env, 400, 'INVALID_PROMOTION_UPDATE', 'Promotion update body is required.');
   const promotion = await rowById(env, id);
   if (!promotion) return fail(request, env, 404, 'PROMOTION_NOT_FOUND', 'Promotion was not found.');
 
-  const title = input.title !== undefined ? input.title.trim() : promotion.title;
-  const description = input.description !== undefined ? input.description.trim() : promotion.description;
-  const kind = input.kind ?? promotion.kind;
-  const value = input.value ?? promotion.value;
-  const startsAt = input.startsAt ?? promotion.startsAt;
-  const endsAt = input.endsAt ?? promotion.endsAt;
-
+  if (input.title !== undefined && typeof input.title !== 'string') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_TITLE', 'Promotion title must be a string.');
+  }
+  const title = typeof input.title === 'string' ? input.title.trim() : promotion.title;
   if (!title || title.length > 120) return fail(request, env, 400, 'INVALID_PROMOTION_TITLE', 'Promotion title is required and must be at most 120 characters.');
+
+  if (input.description !== undefined && typeof input.description !== 'string') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_DESCRIPTION', 'Promotion description must be a string.');
+  }
+  const description = typeof input.description === 'string' ? input.description.trim() : promotion.description;
   if (!description || description.length > 500) return fail(request, env, 400, 'INVALID_PROMOTION_DESCRIPTION', 'Promotion description is required and must be at most 500 characters.');
-  if (kind !== 'percentage' && kind !== 'fixed') return fail(request, env, 400, 'INVALID_PROMOTION_KIND', 'Promotion kind must be percentage or fixed.');
+
+  const kindInput = input.kind;
+  if (kindInput !== undefined && kindInput !== 'percentage' && kindInput !== 'fixed') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_KIND', 'Promotion kind must be percentage or fixed.');
+  }
+  const kind: PromotionKind = kindInput === 'percentage' || kindInput === 'fixed' ? kindInput : promotion.kind;
+
+  const valueInput = input.value;
+  if (valueInput !== undefined && typeof valueInput !== 'number') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_VALUE', 'Promotion value must be a number.');
+  }
+  const value = typeof valueInput === 'number' ? valueInput : promotion.value;
   if (!validValue(kind, value)) return fail(request, env, 400, 'INVALID_PROMOTION_VALUE', 'Percentage must be 1–100; fixed discount must be a positive whole number of cents.');
+
+  if (input.active !== undefined && typeof input.active !== 'boolean') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_ACTIVE', 'Promotion active must be a boolean.');
+  }
+  const active = typeof input.active === 'boolean' ? input.active : promotion.active;
+
+  if (input.startsAt !== undefined && typeof input.startsAt !== 'string') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_WINDOW', 'Promotion start must be a valid timestamp.');
+  }
+  if (input.endsAt !== undefined && typeof input.endsAt !== 'string') {
+    return fail(request, env, 400, 'INVALID_PROMOTION_WINDOW', 'Promotion end must be a valid timestamp.');
+  }
+  const startsAt = typeof input.startsAt === 'string' ? input.startsAt : promotion.startsAt;
+  const endsAt = typeof input.endsAt === 'string' ? input.endsAt : promotion.endsAt;
   if (!validWindow(startsAt, endsAt)) return fail(request, env, 400, 'INVALID_PROMOTION_WINDOW', 'Promotion start must be before end.');
 
   const updated: Promotion = {
@@ -131,7 +186,7 @@ async function updatePromotion(request: Request, env: PromotionLifecycleEnv, id:
     description,
     kind,
     value,
-    active: input.active ?? promotion.active,
+    active,
     startsAt: new Date(startsAt).toISOString(),
     endsAt: new Date(endsAt).toISOString(),
   };
