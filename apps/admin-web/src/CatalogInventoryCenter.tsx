@@ -56,6 +56,7 @@ export function CatalogInventoryCenter() {
   const [attemptedSave, setAttemptedSave] = React.useState(false);
   const [attemptedAdjustment, setAttemptedAdjustment] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+  const [loadVersion, setLoadVersion] = React.useState(0);
   const [busy, setBusy] = React.useState(false);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -76,6 +77,7 @@ export function CatalogInventoryCenter() {
       setSelectedProductId((current) => current && page.items.some((product) => product.id === current)
         ? current
         : page.items[0]?.id ?? null);
+      setLoadVersion((current) => current + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to load the product catalog.');
     } finally {
@@ -104,17 +106,27 @@ export function CatalogInventoryCenter() {
     setConfirmed(false);
     setNotice(null);
     setError(null);
-  }, [selectedProductId]);
+  }, [selectedProductId, loadVersion]);
 
   const normalizedQuery = query.trim().toLowerCase();
-  const filteredProducts = normalizedQuery
+  const filteredProducts = React.useMemo(() => normalizedQuery
     ? products.filter((product) => [
       product.title,
       product.slug,
       ...product.tags,
       ...product.variants.flatMap((variant) => [variant.sku, variant.title]),
     ].some((value) => value.toLowerCase().includes(normalizedQuery)))
-    : products;
+    : products, [normalizedQuery, products]);
+
+  React.useEffect(() => {
+    if (filteredProducts.length === 0) {
+      if (selectedProductId !== null) setSelectedProductId(null);
+      return;
+    }
+    if (!selectedProductId || !filteredProducts.some((product) => product.id === selectedProductId)) {
+      setSelectedProductId(filteredProducts[0]!.id);
+    }
+  }, [filteredProducts, selectedProductId]);
 
   const variants = products.flatMap((product) => product.variants);
   const totalUnits = variants.reduce((sum, variant) => sum + variant.inventoryQuantity, 0);
