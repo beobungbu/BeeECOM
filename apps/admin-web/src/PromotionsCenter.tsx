@@ -115,7 +115,6 @@ export function PromotionsCenter() {
     setExpiry(utcDate(selected.endsAt));
     setAttempted(false);
     setError(null);
-    setNotice(null);
   }, [creating, selected]);
 
   function startCreate() {
@@ -136,6 +135,7 @@ export function PromotionsCenter() {
   function chooseCampaign(id: string) {
     setCreating(false);
     setSelectedId(id);
+    setNotice(null);
   }
 
   function changeKind(next: string) {
