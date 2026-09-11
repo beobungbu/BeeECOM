@@ -9,6 +9,7 @@ import * as React from 'react';
 import { App } from './App';
 import { CampaignSchedulingConformance } from './CampaignSchedulingConformance';
 import { CatalogFormConformance } from './CatalogFormConformance';
+import { CatalogInventoryCenter } from './CatalogInventoryCenter';
 import { CustomerSegmentationConformance } from './CustomerSegmentationConformance';
 import { InventoryHealthConformance } from './InventoryHealthConformance';
 import { PromotionsCenter } from './PromotionsCenter';
@@ -28,6 +29,9 @@ applyThemePreference(initialPreference);
 function CurrentSurface() {
   if (window.location.pathname === '/conformance/forms') {
     return <CatalogFormConformance />;
+  }
+  if (window.location.pathname === '/conformance/catalog-inventory') {
+    return <CatalogInventoryCenter />;
   }
   if (window.location.pathname === '/conformance/review-identity') {
     return <ReviewIdentityConformance />;
