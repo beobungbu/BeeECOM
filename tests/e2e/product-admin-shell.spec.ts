@@ -70,7 +70,8 @@ test.describe('Product Admin shell and routes', () => {
     await expect(page.getByTestId('admin-shell')).toHaveCount(0);
 
     await page.goto(`${ADMIN}/conformance/theme-preference`);
-    await expect(page.getByText('BeeECOM Admin', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Operations workspace', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Refresh dashboard' })).toBeVisible();
     await expect(page.getByTestId('admin-shell')).toHaveCount(0);
   });
 
