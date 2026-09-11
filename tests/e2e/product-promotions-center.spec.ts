@@ -116,7 +116,7 @@ test.describe('Promotions Center product flow', () => {
     });
   });
 
-  test('server rejects duplicate code and invalid windows without corrupting campaigns', async () => {
+  test('server rejects duplicate code, malformed payloads and invalid windows without corrupting campaigns', async () => {
     const api = await playwrightRequest.newContext({ baseURL: API });
     const original = await promotions();
 
@@ -133,6 +133,35 @@ test.describe('Promotions Center product flow', () => {
     });
     expect(duplicate.status()).toBe(409);
     expect((await duplicate.json() as { ok: false; error: { code: string } }).error.code).toBe('PROMOTION_CODE_IN_USE');
+
+    const malformedCode = await api.post('/api/v1/admin/promotions', {
+      data: {
+        code: 123,
+        title: 'Malformed code',
+        description: 'The HTTP boundary must reject this without throwing.',
+        kind: 'percentage',
+        value: 10,
+        startsAt: '2035-01-01T09:00:00.000Z',
+        endsAt: '2035-01-31T23:59:59.000Z',
+      },
+    });
+    expect(malformedCode.status()).toBe(400);
+    expect((await malformedCode.json() as { ok: false; error: { code: string } }).error.code).toBe('INVALID_PROMOTION_CODE');
+
+    const malformedActive = await api.post('/api/v1/admin/promotions', {
+      data: {
+        code: 'BADACTIVE',
+        title: 'Malformed active flag',
+        description: 'The HTTP boundary must validate booleans at runtime.',
+        kind: 'percentage',
+        value: 10,
+        active: 'yes',
+        startsAt: '2035-01-01T09:00:00.000Z',
+        endsAt: '2035-01-31T23:59:59.000Z',
+      },
+    });
+    expect(malformedActive.status()).toBe(400);
+    expect((await malformedActive.json() as { ok: false; error: { code: string } }).error.code).toBe('INVALID_PROMOTION_ACTIVE');
 
     const invalidWindow = await api.post('/api/v1/admin/promotions', {
       data: {
