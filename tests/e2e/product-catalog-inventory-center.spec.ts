@@ -45,7 +45,7 @@ test.describe('Catalog & Inventory Center product flow', () => {
     await resetHealthy();
   });
 
-  test('edits a non-first product and persists canonical merchandising metadata', async ({ page }) => {
+  test('edits a non-first product, persists it and refreshes external canonical changes', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/catalog-inventory`);
     await expect(page.getByText('Catalog & inventory', { exact: true }).first()).toBeVisible();
 
@@ -60,7 +60,15 @@ test.describe('Catalog & Inventory Center product flow', () => {
 
     await page.reload();
     await page.getByLabel('Edit product Trail Runner Pro').click();
-    await expect(page.getByRole('textbox', { name: 'Product title, required' })).toHaveValue('Trail Runner Pro');
+    await expect(title).toHaveValue('Trail Runner Pro');
+
+    const api = await playwrightRequest.newContext({ baseURL: API });
+    const external = await api.patch('/api/v1/admin/products/prod-trail-runner', { data: { title: 'Trail Runner External' } });
+    expect(external.ok()).toBeTruthy();
+    await api.dispose();
+
+    await page.getByRole('button', { name: 'Refresh' }).click();
+    await expect(title).toHaveValue('Trail Runner External');
   });
 
   test('selects a non-first variant, adjusts its stock and survives reload', async ({ page }) => {
@@ -71,7 +79,9 @@ test.describe('Catalog & Inventory Center product flow', () => {
 
     await page.getByRole('textbox', { name: 'Quantity, required' }).fill('3');
     await page.getByRole('textbox', { name: 'Adjustment reason, required' }).fill('Warehouse receipt');
-    await page.getByRole('checkbox', { name: 'I reviewed the resulting stock level' }).check();
+    const confirmation = page.getByRole('checkbox', { name: 'I reviewed the resulting stock level' });
+    await confirmation.click();
+    await expect(confirmation).toBeChecked();
     await page.getByRole('button', { name: 'Apply inventory adjustment' }).click();
 
     await expect(page.getByTestId('catalog-inventory-notice')).toContainText('TRAIL-41 inventory updated to 10 units.');
@@ -87,12 +97,17 @@ test.describe('Catalog & Inventory Center product flow', () => {
     await expect(page.getByTestId('selected-variant-stock')).toContainText('Current stock: 10');
   });
 
-  test('searches the management list by SKU without creating client-only catalog state', async ({ page }) => {
+  test('searches by SKU and keeps the editor aligned with the filtered canonical list', async ({ page }) => {
     await page.goto(`${ADMIN}/conformance/catalog-inventory`);
     await page.getByRole('textbox', { name: 'Search products' }).fill('CAP-001');
     await expect(page.getByLabel('Edit product Studio Cap')).toBeVisible();
     await expect(page.getByLabel('Edit product Cloud Tee')).toHaveCount(0);
     await expect(page.getByText('1 of 4 shown')).toBeVisible();
+    await expect(page.getByTestId('catalog-product-editor').getByText('Studio Cap', { exact: true }).first()).toBeVisible();
+
+    await page.getByRole('textbox', { name: 'Search products' }).fill('NO-SUCH-SKU');
+    await expect(page.getByTestId('catalog-search-empty')).toBeVisible();
+    await expect(page.getByTestId('catalog-product-editor')).toHaveCount(0);
   });
 
   test('server rejects malformed product payloads and negative inventory without corrupting state', async () => {
