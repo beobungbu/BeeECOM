@@ -1,10 +1,11 @@
 import { createBeeEcomClient } from '@beeecom/api-client';
 import { ProductCard, formatMoney } from '@beeecom/app-ui';
-import type { Category, Customer, Product } from '@beeecom/domain';
+import type { Category, Customer, Product, Wishlist } from '@beeecom/domain';
 import {
   Avatar,
   Badge,
   Box,
+  Button,
   Card,
   Chip,
   ChipGroup,
@@ -36,18 +37,26 @@ export function CollectionDiscoveryConformance() {
   const [customer, setCustomer] = React.useState<Customer | null>(null);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [products, setProducts] = React.useState<Product[]>([]);
+  const [wishlist, setWishlist] = React.useState<Wishlist | null>(null);
   const [collection, setCollection] = React.useState<CollectionValue>('all');
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let active = true;
-    void Promise.all([api.customers.get(CUSTOMER_ID), api.catalog.listCategories()])
-      .then(([nextCustomer, nextCategories]) => {
+    void Promise.all([
+      api.customers.get(CUSTOMER_ID),
+      api.catalog.listCategories(),
+      api.wishlist.get(CUSTOMER_ID),
+    ])
+      .then(([nextCustomer, nextCategories, nextWishlist]) => {
         if (!active) return;
         setCustomer(nextCustomer);
         setCategories(nextCategories);
+        setWishlist(nextWishlist);
       })
       .catch((cause) => {
         if (active) setError(cause instanceof Error ? cause.message : 'Unable to load your shopping profile.');
@@ -62,6 +71,7 @@ export function CollectionDiscoveryConformance() {
     setLoading(true);
     setError(null);
     setSelectedProduct(null);
+    setNotice(null);
     void api.catalog
       .listProducts({
         ...(collection === 'all' ? {} : { category: collection }),
@@ -83,6 +93,27 @@ export function CollectionDiscoveryConformance() {
   }, [collection]);
 
   const selectedCategory = categories.find((item) => item.slug === collection);
+  const selectedIsSaved = Boolean(selectedProduct && wishlist?.productIds.includes(selectedProduct.id));
+
+  async function toggleSaved() {
+    if (!selectedProduct) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const updated = selectedIsSaved
+        ? await api.wishlist.remove(CUSTOMER_ID, selectedProduct.id)
+        : await api.wishlist.add(CUSTOMER_ID, { productId: selectedProduct.id });
+      setWishlist(updated);
+      setNotice(selectedIsSaved
+        ? `${selectedProduct.title} removed from saved items.`
+        : `${selectedProduct.title} saved for later.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to update saved items.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <Screen>
@@ -99,9 +130,12 @@ export function CollectionDiscoveryConformance() {
               <Text variant="heading">{customer?.displayName ?? 'BeeECOM shopper'}</Text>
             </Box>
           </Box>
-          <Link onPress={() => window.location.assign('/conformance/account-verification')}>
-            Account security
-          </Link>
+          <Box className="flex-row flex-wrap gap-3">
+            <Link onPress={() => window.location.assign('/conformance/saved-items')}>Saved items</Link>
+            <Link onPress={() => window.location.assign('/conformance/account-verification')}>
+              Account security
+            </Link>
+          </Box>
         </Box>
 
         <Box className="gap-2">
@@ -110,6 +144,12 @@ export function CollectionDiscoveryConformance() {
             {selectedCategory?.description ?? 'Everyday essentials selected for simple, useful wardrobes and daily routines.'}
           </Text>
         </Box>
+
+        {notice ? (
+          <Card className="p-4" testID="collection-saved-notice">
+            <Text variant="body">{notice}</Text>
+          </Card>
+        ) : null}
 
         <Card className="gap-4 p-4 md:p-5">
           <Box className="flex-row flex-wrap items-center justify-between gap-3">
@@ -175,6 +215,19 @@ export function CollectionDiscoveryConformance() {
               <Badge>
                 {selectedProduct.variants[0] ? formatMoney(selectedProduct.variants[0].price) : 'Unavailable'}
               </Badge>
+            </Box>
+            <Box className="flex-row flex-wrap items-center gap-2">
+              <Button
+                variant={selectedIsSaved ? 'outline' : 'default'}
+                disabled={busy || !wishlist}
+                accessibilityLabel={selectedIsSaved
+                  ? `Remove ${selectedProduct.title} from saved items`
+                  : `Save ${selectedProduct.title} for later`}
+                onPress={() => void toggleSaved()}
+              >
+                {selectedIsSaved ? 'Remove from saved' : 'Save for later'}
+              </Button>
+              <Link onPress={() => window.location.assign('/conformance/saved-items')}>View saved items</Link>
             </Box>
           </Card>
         ) : null}
