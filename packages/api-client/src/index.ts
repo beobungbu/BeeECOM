@@ -3,6 +3,7 @@ import type {
   AdminInventoryAdjustInput,
   AdminOrderTransitionInput,
   AdminProductUpdateInput,
+  AdminPromotionCreateInput,
   AdminPromotionUpdateInput,
   AdminReturnTransitionInput,
   AdminReviewModerationInput,
@@ -233,6 +234,7 @@ export function createBeeEcomClient(options: BeeEcomClientOptions) {
         adjustInventory: (id: string, input: AdminInventoryAdjustInput) => request<Product>(`/api/v1/admin/products/${encodeURIComponent(id)}/inventory-adjustments`, { method: 'POST', body: JSON.stringify(input) }),
       },
       promotions: {
+        create: (input: AdminPromotionCreateInput) => request<Promotion>('/api/v1/admin/promotions', { method: 'POST', body: JSON.stringify(input) }),
         update: (id: string, input: AdminPromotionUpdateInput) => request<Promotion>(`/api/v1/admin/promotions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) }),
       },
       orders: {
