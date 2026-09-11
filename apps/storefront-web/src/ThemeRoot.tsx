@@ -17,6 +17,7 @@ import { LayoutActionsConformance } from './LayoutActionsConformance';
 import { OrderHistoryConformance } from './OrderHistoryConformance';
 import { ProductReviewConformance } from './ProductReviewConformance';
 import { ReturnRequestConformance } from './ReturnRequestConformance';
+import { SavedItemsConformance } from './SavedItemsConformance';
 
 const STORAGE_KEY = 'beeecom.theme.preference';
 
@@ -40,6 +41,9 @@ function CurrentSurface() {
   }
   if (window.location.pathname === '/conformance/collections') {
     return <CollectionDiscoveryConformance />;
+  }
+  if (window.location.pathname === '/conformance/saved-items') {
+    return <SavedItemsConformance />;
   }
   if (window.location.pathname === '/conformance/cart') {
     return <CartManagementConformance />;
