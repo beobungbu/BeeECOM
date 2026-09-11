@@ -8,6 +8,7 @@ import { handleChatLifecycle } from './chat-lifecycle';
 import { handleCheckoutLifecycle } from './checkout-lifecycle';
 import coreWorker from './index';
 import { handleOrderLifecycle } from './order-lifecycle';
+import { handlePromotionCreateLifecycle } from './promotion-create-lifecycle';
 import {
   ChatRoom,
   broadcastPersistedChatMessage,
@@ -61,6 +62,8 @@ export default {
       return proxyChatWebSocket(env.CHAT_ROOMS, threadId, request);
     }
 
+    const promotionCreateResponse = await handlePromotionCreateLifecycle(request, env);
+    if (promotionCreateResponse) return promotionCreateResponse;
     const adminResponse = await handleAdminLifecycle(request, env);
     if (adminResponse) return adminResponse;
     const orderResponse = await handleOrderLifecycle(request, env);
