@@ -9,6 +9,7 @@ import type {
   PaymentMethod,
   Product,
   Promotion,
+  PromotionKind,
   ReturnRequest,
   Review,
   ShippingMethod,
@@ -60,6 +61,16 @@ export interface AdminProductUpdateInput {
   tags?: string[] | undefined;
 }
 export interface AdminInventoryAdjustInput { variantId: string; adjustment: number; reason: string }
+export interface AdminPromotionCreateInput {
+  code: string;
+  title: string;
+  description: string;
+  kind: PromotionKind;
+  value: number;
+  active?: boolean | undefined;
+  startsAt: string;
+  endsAt: string;
+}
 export interface AdminPromotionUpdateInput {
   title?: string | undefined;
   description?: string | undefined;
@@ -133,6 +144,7 @@ export interface ApiContractMap {
 
   'PATCH /api/v1/admin/products/:id': { body: AdminProductUpdateInput; response: Product };
   'POST /api/v1/admin/products/:id/inventory-adjustments': { body: AdminInventoryAdjustInput; response: Product };
+  'POST /api/v1/admin/promotions': { body: AdminPromotionCreateInput; response: Promotion };
   'PATCH /api/v1/admin/promotions/:id': { body: AdminPromotionUpdateInput; response: Promotion };
   'PATCH /api/v1/admin/orders/:id': { body: AdminOrderTransitionInput; response: Order };
   'GET /api/v1/admin/customers': { response: Customer[] };
